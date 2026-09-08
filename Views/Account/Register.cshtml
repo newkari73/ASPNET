@@ -1,0 +1,29 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "회원가입";
+}
+
+<section class="auth-shell single-auth">
+    <div class="auth-form">
+        <p class="eyebrow">JOIN THE BOARD</p>
+        <h1>회원가입</h1>
+        <form asp-action="Register" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <label asp-for="UserID"></label>
+            <input asp-for="UserID" class="form-control" autocomplete="username" autofocus />
+            <span asp-validation-for="UserID" class="text-danger"></span>
+            <label asp-for="UserName"></label>
+            <input asp-for="UserName" class="form-control" autocomplete="name" />
+            <span asp-validation-for="UserName" class="text-danger"></span>
+            <label asp-for="UserPWD"></label>
+            <input asp-for="UserPWD" class="form-control" autocomplete="new-password" />
+            <span asp-validation-for="UserPWD" class="text-danger"></span>
+            <div class="form-actions">
+                <a class="btn btn-outline-secondary" asp-action="Login">취소</a>
+                <button class="btn btn-primary" type="submit">가입하기</button>
+            </div>
+        </form>
+    </div>
+</section>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

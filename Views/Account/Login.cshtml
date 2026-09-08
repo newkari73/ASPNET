@@ -1,0 +1,29 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "로그인";
+}
+
+<section class="auth-shell">
+    <div class="auth-intro">
+        <p class="eyebrow">ASPNET BOARD</p>
+        <h1>다시<br />만나요.</h1>
+        <p>로그인 후 게시판의 이야기를 확인하고<br />새로운 글과 댓글을 남겨 보세요.</p>
+    </div>
+    <form asp-action="Login" method="post" class="auth-form">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @if (TempData["Message"] is string message)
+        {
+            <div class="auth-message">@message</div>
+        }
+        <label asp-for="UserID"></label>
+        <input asp-for="UserID" class="form-control" autocomplete="username" autofocus />
+        <span asp-validation-for="UserID" class="text-danger"></span>
+        <label asp-for="UserPWD"></label>
+        <input asp-for="UserPWD" class="form-control" autocomplete="current-password" />
+        <span asp-validation-for="UserPWD" class="text-danger"></span>
+        <button class="btn btn-primary auth-submit" type="submit">로그인</button>
+        <a class="auth-link" asp-action="Register">아직 회원이 아니신가요? 회원가입</a>
+    </form>
+</section>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

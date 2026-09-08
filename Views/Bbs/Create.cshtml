@@ -1,0 +1,27 @@
+@model BbsPost
+@{
+    ViewData["Title"] = "글쓰기";
+}
+
+<div class="form-heading">
+    <p class="eyebrow">NEW POST</p>
+    <h1>글쓰기</h1>
+</div>
+<form asp-action="Create" method="post" enctype="multipart/form-data" class="post-form">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <p class="signed-user">작성자: @Context.Session.GetString("UserName")</p>
+    <label asp-for="Title"></label>
+    <input asp-for="Title" class="form-control" autofocus />
+    <span asp-validation-for="Title" class="text-danger"></span>
+    <label asp-for="Contents"></label>
+    <textarea asp-for="Contents" class="form-control content-input" rows="12"></textarea>
+    <span asp-validation-for="Contents" class="text-danger"></span>
+    <label for="upload">첨부파일</label>
+    <input id="upload" name="upload" type="file" class="form-control" />
+    <div class="form-actions">
+        <a class="btn btn-outline-secondary" asp-action="Index">취소</a>
+        <button class="btn btn-primary" type="submit">등록하기</button>
+    </div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,0 +1,62 @@
+@model BbsPageViewModel
+@{
+    ViewData["Title"] = "게시판";
+}
+
+<section class="board-header">
+    <div>
+        <p class="eyebrow">COMMUNITY BOARD</p>
+        <h1>게시판</h1>
+        <p class="board-description">새로운 소식과 이야기를 남겨 주세요.</p>
+    </div>
+    <a class="btn btn-primary" asp-action="Create">글쓰기</a>
+</section>
+
+<div class="board-table-wrap">
+    <table class="table board-table align-middle">
+        <thead>
+            <tr>
+                <th>제목</th>
+                <th class="date-column">등록일</th>
+                <th class="file-column">파일</th>
+            </tr>
+        </thead>
+        <tbody>
+        @if (Model.Posts.Count == 0)
+        {
+            <tr><td colspan="3" class="empty-state">등록된 게시글이 없습니다.</td></tr>
+        }
+        else
+        {
+            foreach (var post in Model.Posts)
+            {
+                <tr>
+                    <td><a class="post-title" asp-action="Details" asp-route-id="@post.ID">@post.Title</a></td>
+                    <td class="date-column">@post.RegDate.ToString("yyyy.MM.dd")</td>
+                    <td class="file-column">@(string.IsNullOrWhiteSpace(post.File) ? "-" : "첨부")</td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="pagination-nav" aria-label="게시판 페이지 이동">
+        @if (Model.CurrentPage > 1)
+        {
+            <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)" aria-label="이전 페이지">&lsaquo;</a>
+        }
+
+        @for (var pageNumber = 1; pageNumber <= Model.TotalPages; pageNumber++)
+        {
+            <a class="page-link @(pageNumber == Model.CurrentPage ? "active" : "")" asp-action="Index" asp-route-page="@pageNumber">@pageNumber</a>
+        }
+
+        @if (Model.CurrentPage < Model.TotalPages)
+        {
+            <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)" aria-label="다음 페이지">&rsaquo;</a>
+        }
+    </nav>
+}

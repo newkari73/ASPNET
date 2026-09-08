@@ -1,0 +1,70 @@
+@model BbsDetailViewModel
+@{
+    ViewData["Title"] = "게시글 보기";
+}
+
+<article class="post-detail">
+    <div class="post-detail-heading">
+        <p class="eyebrow">POST</p>
+        <h1>@Model.Post.Title</h1>
+        <time datetime="@Model.Post.RegDate.ToString("s")">No. @Model.Post.ID · @Model.Post.UserName · @Model.Post.RegDate.ToString("yyyy.MM.dd HH:mm")</time>
+    </div>
+    <div class="post-content">@Model.Post.Contents</div>
+    @if (!string.IsNullOrWhiteSpace(Model.Post.File))
+    {
+        <button class="attachment" type="button" data-file-modal-open data-file-url="@Url.Content($"~/uploads/{Model.Post.File}")">첨부파일 열기</button>
+    }
+    <div class="post-actions">
+        <a class="btn btn-outline-secondary" asp-action="Index">목록</a>
+        <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Post.ID">수정</a>
+        <form asp-action="Delete" asp-route-id="@Model.Post.ID" method="post" onsubmit="return confirm('이 게시글을 삭제할까요?');">
+            @Html.AntiForgeryToken()
+            <button class="btn btn-outline-danger" type="submit">삭제</button>
+        </form>
+    </div>
+</article>
+
+<section class="comments-section">
+    <div class="comments-heading">
+        <h2>댓글 <span>@Model.Comments.Count</span></h2>
+    </div>
+    @foreach (var comment in Model.Comments)
+    {
+        <div class="comment-item">
+            <div class="comment-meta"><strong>@comment.UserName</strong><time>@comment.RegDate.ToString("yyyy.MM.dd HH:mm")</time></div>
+            <p>@comment.Contents</p>
+            <form asp-action="DeleteComment" asp-route-id="@comment.ID" asp-route-bbsId="@Model.Post.ID" method="post">
+                @Html.AntiForgeryToken()
+                <button class="comment-delete" type="submit">삭제</button>
+            </form>
+        </div>
+    }
+    <form asp-action="AddComment" method="post" class="comment-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="BbsID" value="@Model.Post.ID" />
+        <textarea name="Contents" class="form-control" placeholder="댓글을 입력해 주세요." maxlength="1000" rows="3" required></textarea>
+        <button class="btn btn-primary" type="submit">댓글 등록</button>
+    </form>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Model.Post.File))
+{
+    <div class="file-modal" data-file-modal hidden>
+        <div class="file-modal-backdrop" data-file-modal-close></div>
+        <section class="file-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="file-modal-title">
+            <header class="file-modal-header">
+                <h2 id="file-modal-title">첨부파일</h2>
+                <div class="file-modal-controls" aria-label="팝업 크기 조절">
+                    <button type="button" data-file-modal-size="small">작게</button>
+                    <button type="button" class="active" data-file-modal-size="medium">기본</button>
+                    <button type="button" data-file-modal-size="large">크게</button>
+                    <button type="button" class="file-modal-close" data-file-modal-close aria-label="첨부파일 팝업 닫기">닫기</button>
+                </div>
+            </header>
+            <div class="file-modal-content">
+                <img alt="첨부 이미지 미리보기" data-file-modal-image hidden />
+                <iframe title="첨부파일 미리보기" data-file-modal-frame></iframe>
+            </div>
+        </section>
+    </div>
+}

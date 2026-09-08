@@ -1,0 +1,141 @@
+@model ScheduleViewModel
+@{
+    ViewData["Title"] = "일정관리";
+    var firstDay = new DateTime(Model.Month.Year, Model.Month.Month, 1);
+    var startOffset = ((int)firstDay.DayOfWeek + 6) % 7;
+    var daysInMonth = DateTime.DaysInMonth(Model.Month.Year, Model.Month.Month);
+    var previousMonth = Model.Month.AddMonths(-1);
+    var nextMonth = Model.Month.AddMonths(1);
+    var holidays = new Dictionary<DateTime, string>
+    {
+        [new DateTime(Model.Month.Year, 1, 1)] = "신정",
+        [new DateTime(Model.Month.Year, 3, 1)] = "삼일절",
+        [new DateTime(Model.Month.Year, 5, 5)] = "어린이날",
+        [new DateTime(Model.Month.Year, 6, 6)] = "현충일",
+        [new DateTime(Model.Month.Year, 8, 15)] = "광복절",
+        [new DateTime(Model.Month.Year, 10, 3)] = "개천절",
+        [new DateTime(Model.Month.Year, 10, 9)] = "한글날",
+        [new DateTime(Model.Month.Year, 12, 25)] = "성탄절"
+    };
+    if (Model.Month.Year == 2026)
+    {
+        holidays[new DateTime(2026, 2, 16)] = "설날 연휴";
+        holidays[new DateTime(2026, 2, 17)] = "설날";
+        holidays[new DateTime(2026, 2, 18)] = "설날 연휴";
+        holidays[new DateTime(2026, 5, 24)] = "부처님오신날";
+        holidays[new DateTime(2026, 5, 25)] = "부처님오신날 대체공휴일";
+        holidays[new DateTime(2026, 8, 17)] = "광복절 대체공휴일";
+        holidays[new DateTime(2026, 9, 24)] = "추석 연휴";
+        holidays[new DateTime(2026, 9, 25)] = "추석";
+        holidays[new DateTime(2026, 9, 26)] = "추석 연휴";
+        holidays[new DateTime(2026, 10, 5)] = "개천절 대체공휴일";
+    }
+    var schedulesByDate = Model.MonthSchedules.GroupBy(item => item.StartDateTime.Date)
+        .ToDictionary(group => group.Key, group => group.ToList());
+}
+
+<section class="schedule-header">
+    <div>
+        <p class="eyebrow">PERSONAL CALENDAR</p>
+        <h1>일정관리</h1>
+        <p class="board-description">날짜를 선택해 일정을 기록해 보세요.</p>
+    </div>
+    <a class="btn btn-primary" asp-controller="Schedule" asp-action="Index" asp-route-selectedDate="@DateTime.Today.ToString("yyyy-MM-dd")">오늘</a>
+</section>
+
+<div class="schedule-layout">
+    <section class="calendar-panel">
+        <header class="calendar-heading">
+            <a class="calendar-nav" asp-route-month="@previousMonth.ToString("yyyy-MM-dd")" asp-route-selectedDate="@previousMonth.ToString("yyyy-MM-dd")" aria-label="이전 달">&lsaquo;</a>
+            <h2>@Model.Month.ToString("yyyy년 M월")</h2>
+            <a class="calendar-nav" asp-route-month="@nextMonth.ToString("yyyy-MM-dd")" asp-route-selectedDate="@nextMonth.ToString("yyyy-MM-dd")" aria-label="다음 달">&rsaquo;</a>
+        </header>
+        <div class="calendar-grid calendar-weekdays">
+            @foreach (var weekday in new[] { "월", "화", "수", "목", "금", "토", "일" })
+            {
+                <div>@weekday</div>
+            }
+        </div>
+        <div class="calendar-grid calendar-days">
+            @for (var blank = 0; blank < startOffset; blank++)
+            {
+                <div class="calendar-day is-empty"></div>
+            }
+            @for (var day = 1; day <= daysInMonth; day++)
+            {
+                var date = new DateTime(Model.Month.Year, Model.Month.Month, day);
+                var isSelected = date == Model.SelectedDate.Date;
+                var hasSchedule = Model.DatesWithSchedules.Contains(date);
+                var isHoliday = holidays.TryGetValue(date, out var holidayName);
+                var daySchedules = schedulesByDate.TryGetValue(date, out var scheduledItems) ? scheduledItems : [];
+                <a class="calendar-day @(isSelected ? "is-selected" : "") @(hasSchedule ? "has-schedule" : "") @(isHoliday ? "is-holiday" : "")" title="@(isHoliday ? holidayName : null)" asp-route-month="@Model.Month.ToString("yyyy-MM-dd")" asp-route-selectedDate="@date.ToString("yyyy-MM-dd")">
+                    <span>@day</span>
+                    @if (hasSchedule) { <i aria-label="일정 있음"></i> }
+                    @if (daySchedules.Count > 0)
+                    {
+                        <span class="schedule-hover-card">
+                            @foreach (var item in daySchedules)
+                            {
+                                <strong>@item.Title</strong>
+                                @if (!string.IsNullOrWhiteSpace(item.Contents)) { <small>@item.Contents</small> }
+                            }
+                        </span>
+                    }
+                </a>
+            }
+        </div>
+    </section>
+
+    <section class="schedule-detail">
+        <p class="eyebrow">SELECTED DATE</p>
+        <h2>@Model.SelectedDate.ToString("M월 d일 (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ko-KR"))</h2>
+        @if (Model.Schedules.Count == 0)
+        {
+            <p class="schedule-empty">등록된 일정이 없습니다.</p>
+        }
+        else
+        {
+            foreach (var schedule in Model.Schedules)
+            {
+                <article class="schedule-item">
+                    <div><h3>@schedule.Title</h3><p class="schedule-time">@schedule.StartDateTime.ToString("yyyy.MM.dd HH:mm") ~ @schedule.EndDateTime.ToString("yyyy.MM.dd HH:mm")</p><p>@schedule.Contents</p></div>
+                    <form asp-action="Delete" method="post" onsubmit="return confirm('이 일정을 삭제할까요?');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@schedule.ID" />
+                        <input type="hidden" name="selectedDate" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" />
+                        <button class="schedule-delete" type="submit" aria-label="일정 삭제">삭제</button>
+                    </form>
+                </article>
+            }
+        }
+        <button class="btn btn-primary schedule-add-button" type="button" data-schedule-open>일정 등록</button>
+    </section>
+</div>
+
+<div class="schedule-modal" data-schedule-modal hidden>
+    <div class="schedule-modal-backdrop" data-schedule-close></div>
+    <section class="schedule-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
+        <header class="schedule-modal-header">
+            <h2 id="schedule-modal-title">일정 등록</h2>
+            <button type="button" class="schedule-modal-close" data-schedule-close aria-label="일정 등록 닫기">닫기</button>
+        </header>
+        <form asp-action="Create" method="post" class="schedule-form" data-schedule-form>
+            @Html.AntiForgeryToken()
+            <label for="schedule-start-date">시작 일시</label>
+            <div class="schedule-datetime-row">
+                <input id="schedule-start-date" name="StartDate" type="date" class="form-control" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" required />
+                <input name="StartTime" type="time" class="form-control" value="09:00" required />
+            </div>
+            <label for="schedule-end-date">완료 일시</label>
+            <div class="schedule-datetime-row">
+                <input id="schedule-end-date" name="EndDate" type="date" class="form-control" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" required />
+                <input name="EndTime" type="time" class="form-control" value="10:00" required />
+            </div>
+            <label for="schedule-title">일정 제목</label>
+            <input id="schedule-title" name="Title" class="form-control" placeholder="일정 제목" maxlength="200" required />
+            <textarea name="Contents" class="form-control" placeholder="내용 (선택)" maxlength="2000" rows="4"></textarea>
+            <p class="schedule-form-error" data-schedule-error role="alert"></p>
+            <button class="btn btn-primary" type="submit">등록하기</button>
+        </form>
+    </section>
+</div>
