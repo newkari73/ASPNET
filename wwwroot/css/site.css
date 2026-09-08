@@ -173,25 +173,31 @@ h1 {
 .content-input { resize: vertical; }
 .current-file { font-size: .82rem; margin: .3rem 0 0; }
 .schedule-header { align-items: end; display: flex; justify-content: space-between; margin: 5rem 0 2rem; }
-.schedule-layout { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr); }
-.calendar-panel, .schedule-detail { background: #fffdf8; border-top: 2px solid var(--ink); padding: 1.4rem; }
+.schedule-layout { display: block; }
+.calendar-panel { background: #fffdf8; border-top: 2px solid var(--ink); padding: 1.4rem; }
 .calendar-heading { align-items: center; display: flex; justify-content: space-between; margin-bottom: 1.2rem; }
 .calendar-heading h2, .schedule-detail h2 { font-size: 1.45rem; margin: 0; }
 .calendar-nav { color: var(--ink); font-size: 2rem; line-height: 1; text-decoration: none; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .calendar-weekdays { color: var(--muted); font-family: system-ui, sans-serif; font-size: .78rem; text-align: center; }
 .calendar-weekdays div { padding: .6rem 0; }
-.calendar-day { align-items: center; aspect-ratio: 1.2; border: 1px solid transparent; color: var(--ink); display: flex; flex-direction: column; justify-content: center; margin: .1rem; position: relative; text-decoration: none; }
+.calendar-day { align-items: center; aspect-ratio: 1.2; border: 1px solid transparent; color: var(--ink); display: flex; flex-direction: column; gap: .15rem; justify-content: flex-start; margin: .1rem; padding-top: .55rem; position: relative; text-decoration: none; }
 .calendar-day:hover, .calendar-day.is-selected { background: #e5f2ed; border-color: var(--accent); }
 .calendar-day.is-holiday, .calendar-day.is-holiday > span:first-child { color: #c0392b !important; }
 .calendar-day.is-holiday.is-selected { background: #fbe9e7; border-color: #c0392b; }
 .calendar-day.is-empty { pointer-events: none; }
 .calendar-day.has-schedule span { font-weight: 700; }
 .calendar-day.has-schedule i { background: var(--accent); border-radius: 50%; height: .32rem; margin-top: .25rem; width: .32rem; }
+.schedule-range-label { background: var(--accent); color: #fff; display: block; font-family: system-ui, sans-serif; font-size: .68rem; max-width: 100%; overflow: hidden; padding: .14rem .25rem; text-overflow: ellipsis; white-space: nowrap; width: calc(100% - .4rem); }
 .schedule-hover-card { background: var(--ink); border: 1px solid #fff; color: #fff; display: none; left: 50%; min-width: 170px; padding: .65rem .75rem; position: absolute; text-align: left; top: calc(100% + .35rem); transform: translateX(-50%); z-index: 20; }
 .calendar-day:hover .schedule-hover-card, .calendar-day:focus-visible .schedule-hover-card { display: flex; flex-direction: column; gap: .25rem; }
 .schedule-hover-card strong { color: #fff; font-family: system-ui, sans-serif; font-size: .78rem; white-space: normal; }
 .schedule-hover-card small { color: #d7e1df; font-family: system-ui, sans-serif; font-size: .7rem; line-height: 1.35; white-space: normal; }
+.schedule-hover-item { align-items: center; display: flex; gap: .6rem; justify-content: space-between; }
+.schedule-hover-delete, .schedule-hover-add { background: transparent; border: 0; color: #d7e1df; cursor: pointer; font-family: system-ui, sans-serif; font-size: .7rem; padding: 0; }
+.schedule-hover-delete:hover, .schedule-hover-add:hover { color: #fff; text-decoration: underline; }
+.schedule-day-add { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: .85rem; opacity: 0; position: absolute; right: .2rem; top: .2rem; }
+.calendar-day:hover .schedule-day-add, .calendar-day:focus-visible .schedule-day-add { opacity: 1; }
 .schedule-detail > .eyebrow { margin-bottom: .6rem; }
 .schedule-empty { color: var(--muted); font-family: system-ui, sans-serif; font-size: .9rem; margin: 2rem 0; }
 .schedule-item { border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 1rem; padding: 1rem 0; }
@@ -227,7 +233,7 @@ h1 {
   .file-modal-controls button { flex: 1; }
   .schedule-header { align-items: start; flex-direction: column; gap: 1rem; margin-top: 3rem; }
   .schedule-layout { grid-template-columns: 1fr; }
-  .calendar-panel, .schedule-detail { padding-left: .8rem; padding-right: .8rem; }
+  .calendar-panel { padding-left: .8rem; padding-right: .8rem; }
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {

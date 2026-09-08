@@ -35,7 +35,10 @@ public class ScheduleController(IConfiguration configuration) : Controller
             SelectedDate = selected,
             Schedules = schedules.Where(item => item.StartDateTime.Date == selected).ToList(),
             MonthSchedules = schedules,
-            DatesWithSchedules = schedules.Select(item => item.StartDateTime.Date).ToHashSet()
+            DatesWithSchedules = schedules
+                .SelectMany(item => Enumerable.Range(0, (item.EndDateTime.Date - item.StartDateTime.Date).Days + 1)
+                    .Select(offset => item.StartDateTime.Date.AddDays(offset)))
+                .ToHashSet()
         });
     }
 
@@ -77,6 +80,10 @@ public class ScheduleController(IConfiguration configuration) : Controller
         command.Parameters.Add("@ID", SqlDbType.Int).Value = id;
         command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = CurrentUserId;
         await command.ExecuteNonQueryAsync();
+        if (Request.Headers.XRequestedWith == "XMLHttpRequest")
+        {
+            return Json(new { success = true });
+        }
         return RedirectToAction(nameof(Index), new { selectedDate = selectedDate.ToString("yyyy-MM-dd") });
     }
 

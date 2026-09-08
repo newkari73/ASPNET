@@ -58,10 +58,10 @@
 
 (() => {
 	const modal = document.querySelector('[data-schedule-modal]');
-	const openButton = document.querySelector('[data-schedule-open]');
+	const openButtons = document.querySelectorAll('[data-schedule-open-date]');
 	const form = document.querySelector('[data-schedule-form]');
 
-	if (!modal || !openButton || !form) {
+	if (!modal || openButtons.length === 0 || !form) {
 		return;
 	}
 
@@ -71,11 +71,52 @@
 		document.body.classList.remove('modal-open');
 	};
 
-	openButton.addEventListener('click', () => {
+	const openModal = (date) => {
 		error.textContent = '';
+		modal.querySelector('[name="StartDate"]').value = date;
+		modal.querySelector('[name="EndDate"]').value = date;
 		modal.hidden = false;
 		document.body.classList.add('modal-open');
 		modal.querySelector('[name="Title"]').focus();
+	};
+
+	openButtons.forEach((button) => {
+		button.addEventListener('click', (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+			openModal(button.dataset.scheduleOpenDate);
+		});
+	});
+
+	document.querySelectorAll('[data-schedule-delete-id]').forEach((button) => {
+		button.addEventListener('click', async (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+			if (!confirm('이 일정을 삭제할까요?')) {
+				return;
+			}
+
+			const data = new FormData();
+			data.append('id', button.dataset.scheduleDeleteId);
+			data.append('selectedDate', button.dataset.scheduleDeleteDate);
+			data.append('__RequestVerificationToken', form.querySelector('[name="__RequestVerificationToken"]').value);
+			button.disabled = true;
+			try {
+				const response = await fetch('/Schedule/Delete', {
+					method: 'POST',
+					body: data,
+					headers: { 'X-Requested-With': 'XMLHttpRequest' }
+				});
+				const result = await response.json();
+				if (!response.ok || !result.success) {
+					throw new Error(result.message || '일정 삭제에 실패했습니다.');
+				}
+				window.location.reload();
+			} catch (requestError) {
+				button.disabled = false;
+				alert(requestError.message);
+			}
+		});
 	});
 
 	modal.querySelectorAll('[data-schedule-close]').forEach((button) => {

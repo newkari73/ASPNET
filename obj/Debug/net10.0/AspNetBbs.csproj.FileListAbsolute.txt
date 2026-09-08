@@ -127,5 +127,6 @@ C:\Github\ASPNET\obj\Debug\net10.0\refint\AspNetBbs.dll
 C:\Github\ASPNET\obj\Debug\net10.0\AspNetBbs.pdb
 C:\Github\ASPNET\obj\Debug\net10.0\AspNetBbs.genruntimeconfig.cache
 C:\Github\ASPNET\obj\Debug\net10.0\ref\AspNetBbs.dll
-C:\Github\ASPNET\obj\Debug\net10.0\compressed\11mtms3q54-{0}-rpuuy19okn-rpuuy19okn.gz
-C:\Github\ASPNET\obj\Debug\net10.0\compressed\3vzbpr8dh0-{0}-ih7bkz9d2z-ih7bkz9d2z.gz
+C:\Github\ASPNET\obj\Debug\net10.0\AspNetBbs.sourcelink.json
+C:\Github\ASPNET\obj\Debug\net10.0\compressed\3vzbpr8dh0-{0}-xdpzu3r8ee-xdpzu3r8ee.gz
+C:\Github\ASPNET\obj\Debug\net10.0\compressed\11mtms3q54-{0}-wft7u4agnj-wft7u4agnj.gz

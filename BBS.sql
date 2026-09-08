@@ -140,7 +140,7 @@ BEGIN
             RegDate
         FROM [dbo].[Schedule]
                 WHERE UserID = @UserID
-                    AND StartDateTime >= DATEFROMPARTS(YEAR(@Month), MONTH(@Month), 1)
+                    AND EndDateTime >= DATEFROMPARTS(YEAR(@Month), MONTH(@Month), 1)
                     AND StartDateTime < DATEADD(MONTH, 1, DATEFROMPARTS(YEAR(@Month), MONTH(@Month), 1))
                 ORDER BY StartDateTime ASC, ID ASC;
     END TRY
