@@ -63,11 +63,24 @@
             {
                 var date = new DateTime(Model.Month.Year, Model.Month.Month, day);
                 var isSelected = date == Model.SelectedDate.Date;
+                var isPast = date < DateTime.Today;
                 var hasSchedule = Model.DatesWithSchedules.Contains(date);
                 var isHoliday = holidays.TryGetValue(date, out var holidayName);
                 var daySchedules = Model.MonthSchedules
                     .Where(item => item.StartDateTime.Date <= date && item.EndDateTime.Date >= date)
                     .ToList();
+                @if (isPast)
+                {
+                    <div class="calendar-day is-past @(hasSchedule ? "has-schedule" : "") @(isHoliday ? "is-holiday" : "")" title="@(isHoliday ? holidayName : "지난 날짜")" aria-disabled="true">
+                        <span>@day</span>
+                        @foreach (var item in daySchedules)
+                        {
+                            <span class="schedule-range-label">@item.Title</span>
+                        }
+                    </div>
+                }
+                else
+                {
                 <a class="calendar-day @(isSelected ? "is-selected" : "") @(hasSchedule ? "has-schedule" : "") @(isHoliday ? "is-holiday" : "")" title="@(isHoliday ? holidayName : null)" asp-route-month="@Model.Month.ToString("yyyy-MM-dd")" asp-route-selectedDate="@date.ToString("yyyy-MM-dd")">
                     <span>@day</span>
                     @if (hasSchedule) { <i aria-label="일정 있음"></i> }
@@ -94,6 +107,7 @@
                         <button type="button" class="schedule-day-add" data-schedule-open-date="@date.ToString("yyyy-MM-dd")" aria-label="@date.ToString("yyyy년 M월 d일") 일정 등록">+</button>
                     }
                 </a>
+                }
             }
         </div>
     </section>

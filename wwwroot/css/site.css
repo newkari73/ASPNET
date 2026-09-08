@@ -186,6 +186,8 @@ h1 {
 .calendar-day.is-holiday, .calendar-day.is-holiday > span:first-child { color: #c0392b !important; }
 .calendar-day.is-holiday.is-selected { background: #fbe9e7; border-color: #c0392b; }
 .calendar-day.is-empty { pointer-events: none; }
+.calendar-day.is-past { color: #b8c0c0; cursor: not-allowed; opacity: .48; }
+.calendar-day.is-past .schedule-range-label { background: #aeb8b8; }
 .calendar-day.has-schedule span { font-weight: 700; }
 .calendar-day.has-schedule i { background: var(--accent); border-radius: 50%; height: .32rem; margin-top: .25rem; width: .32rem; }
 .schedule-range-label { background: var(--accent); color: #fff; display: block; font-family: system-ui, sans-serif; font-size: .68rem; max-width: 100%; overflow: hidden; padding: .14rem .25rem; text-overflow: ellipsis; white-space: nowrap; width: calc(100% - .4rem); }

@@ -46,9 +46,9 @@ public class ScheduleController(IConfiguration configuration) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(ScheduleFormModel model)
     {
-        if (!ModelState.IsValid || model.EndDateTime < model.StartDateTime)
+        if (!ModelState.IsValid || model.StartDateTime.Date < DateTime.Today || model.EndDateTime < model.StartDateTime)
         {
-            return BadRequest(new { success = false, message = "완료 일시는 시작 일시보다 빠를 수 없습니다." });
+            return BadRequest(new { success = false, message = "지난 날짜는 등록할 수 없으며 완료 일시는 시작 일시보다 빠를 수 없습니다." });
         }
 
         try
