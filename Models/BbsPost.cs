@@ -5,6 +5,7 @@ namespace AspNetBbs.Models;
 public class BbsPost
 {
     public int ID { get; set; }
+    public string? UserID { get; set; }
 
     [Required(ErrorMessage = "이름을 입력해 주세요.")]
     [StringLength(50, ErrorMessage = "이름은 50자 이내로 입력해 주세요.")]
@@ -25,6 +26,8 @@ public class BbsPost
 
     [Display(Name = "첨부파일")]
     public string? File { get; set; }
+
+    public int CommentCount { get; set; }
 }
 
 public class BbsPageViewModel

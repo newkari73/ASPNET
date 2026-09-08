@@ -31,7 +31,13 @@
             foreach (var post in Model.Posts)
             {
                 <tr>
-                    <td><a class="post-title" asp-action="Details" asp-route-id="@post.ID">@post.Title</a></td>
+                    <td>
+                        <a class="post-title" asp-action="Details" asp-route-id="@post.ID">@post.Title</a>
+                        @if (post.CommentCount > 0)
+                        {
+                            <span class="comment-count" aria-label="댓글 @(post.CommentCount)개">[@post.CommentCount]</span>
+                        }
+                    </td>
                     <td class="date-column">@post.RegDate.ToString("yyyy.MM.dd")</td>
                     <td class="file-column">@(string.IsNullOrWhiteSpace(post.File) ? "-" : "첨부")</td>
                 </tr>

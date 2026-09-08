@@ -78,6 +78,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
     public async Task<IActionResult> Create(BbsPost post, IFormFile? upload)
     {
         post.UserName = CurrentUserName;
+        post.UserID = CurrentUserId;
         ModelState.Remove(nameof(BbsPost.UserName));
         if (!ModelState.IsValid)
         {
@@ -93,7 +94,12 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
     public async Task<IActionResult> Edit(int id)
     {
         var post = await FindPostAsync(id);
-        return post is null ? NotFound() : View(post);
+        if (post is null)
+        {
+            return NotFound();
+        }
+
+        return post.UserID == CurrentUserId ? View(post) : Forbid();
     }
 
     [HttpPost]
@@ -105,7 +111,14 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
             return BadRequest();
         }
 
+        var existingPost = await FindPostAsync(id);
+        if (existingPost?.UserID != CurrentUserId)
+        {
+            return Forbid();
+        }
+
         post.UserName = CurrentUserName;
+        post.UserID = CurrentUserId;
         ModelState.Remove(nameof(BbsPost.UserName));
         if (!ModelState.IsValid)
         {
@@ -126,6 +139,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
         await connection.OpenAsync();
         await using var command = CreateCommand(connection, "dbo.BBS_Delete");
         command.Parameters.Add("@ID", SqlDbType.Int).Value = id;
+        command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = CurrentUserId;
         await command.ExecuteNonQueryAsync();
         return RedirectToAction(nameof(Index));
     }
@@ -188,6 +202,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
             command.Parameters.Add("@ID", SqlDbType.Int).Value = post.ID;
         }
         command.Parameters.Add("@Title", SqlDbType.NVarChar, 200).Value = post.Title;
+        command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = (object?)post.UserID ?? DBNull.Value;
         command.Parameters.Add("@UserName", SqlDbType.NVarChar, 50).Value = post.UserName;
         command.Parameters.Add("@Contents", SqlDbType.NVarChar, -1).Value = post.Contents;
         command.Parameters.Add("@File", SqlDbType.NVarChar, 500).Value = (object?)post.File ?? DBNull.Value;
@@ -216,6 +231,8 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
     private static BbsPost MapPost(SqlDataReader reader) => new()
     {
         ID = reader.GetInt32(reader.GetOrdinal("ID")),
+        UserID = reader.IsDBNull(reader.GetOrdinal("UserID")) ? null : reader.GetString(reader.GetOrdinal("UserID")),
+        CommentCount = reader.GetInt32(reader.GetOrdinal("CommentCount")),
         UserName = reader.GetString(reader.GetOrdinal("UserName")),
         Title = reader.GetString(reader.GetOrdinal("Title")),
         Contents = reader.GetString(reader.GetOrdinal("Contents")),
@@ -251,5 +268,6 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
         CommandType = CommandType.StoredProcedure
     };
 
+    private string CurrentUserId => HttpContext.Session.GetString("UserID")!;
     private string CurrentUserName => HttpContext.Session.GetString("UserName") ?? "회원";
 }

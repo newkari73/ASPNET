@@ -25,14 +25,18 @@ BEGIN
         FROM [dbo].[BBS];
 
         SELECT
-            ID,
-            UserName,
-            Title,
-            Contents,
-            [File],
-            RegDate
+            BBS.ID,
+            BBS.UserName,
+            BBS.Title,
+            BBS.Contents,
+            BBS.[File],
+            BBS.RegDate,
+            COUNT(BBSComment.ID) AS CommentCount
         FROM [dbo].[BBS]
-        ORDER BY ID DESC
+        LEFT JOIN [dbo].[BBSComment]
+            ON BBSComment.BbsID = BBS.ID
+        GROUP BY BBS.ID, BBS.UserName, BBS.Title, BBS.Contents, BBS.[File], BBS.RegDate
+        ORDER BY BBS.ID DESC
         OFFSET (@Page - 1) * @PageSize ROWS
         FETCH NEXT @PageSize ROWS ONLY;
     END TRY

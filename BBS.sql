@@ -248,6 +248,7 @@ BEGIN
     CREATE TABLE dbo.BBS
     (
         ID INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_BBS PRIMARY KEY,
+        UserID NVARCHAR(50) NULL,
         Title NVARCHAR(200) NOT NULL,
         Contents NVARCHAR(MAX) NOT NULL,
         [File] NVARCHAR(500) NULL,
@@ -273,20 +274,13 @@ BEGIN
 END;
 GO
 
-UPDATE dbo.BBS SET UserName = N'관리자' WHERE UserName IS NULL;
+IF COL_LENGTH(N'dbo.BBS', N'UserID') IS NULL
+BEGIN
+    ALTER TABLE dbo.BBS ADD UserID NVARCHAR(50) NULL;
+END;
 GO
 
-IF EXISTS
-(
-    SELECT 1
-    FROM sys.columns
-    WHERE object_id = OBJECT_ID(N'dbo.BBS')
-      AND name = N'UserName'
-      AND is_nullable = 1
-)
-BEGIN
-    ALTER TABLE dbo.BBS ALTER COLUMN UserName NVARCHAR(50) NOT NULL;
-END;
+UPDATE dbo.BBS SET UserName = N'관리자' WHERE UserName IS NULL;
 GO
 
 IF OBJECT_ID(N'dbo.BBSComment', N'U') IS NULL
@@ -325,14 +319,19 @@ BEGIN
         FROM [dbo].[BBS];
 
         SELECT
-            ID,
-            UserName,
-            Title,
-            Contents,
-            [File],
-            RegDate
+            BBS.ID,
+            BBS.UserID,
+            BBS.UserName,
+            BBS.Title,
+            BBS.Contents,
+            BBS.[File],
+            BBS.RegDate,
+            COUNT(BBSComment.ID) AS CommentCount
         FROM [dbo].[BBS]
-        ORDER BY ID DESC
+        LEFT JOIN [dbo].[BBSComment]
+            ON BBSComment.BbsID = BBS.ID
+        GROUP BY BBS.ID, BBS.UserID, BBS.UserName, BBS.Title, BBS.Contents, BBS.[File], BBS.RegDate
+        ORDER BY BBS.ID DESC
         OFFSET (@Page - 1) * @PageSize ROWS
         FETCH NEXT @PageSize ROWS ONLY;
     END TRY
@@ -362,14 +361,19 @@ BEGIN
 
     BEGIN TRY
         SELECT
-            ID,
-            UserName,
-            Title,
-            Contents,
-            [File],
-            RegDate
+            BBS.ID,
+            BBS.UserID,
+            BBS.UserName,
+            BBS.Title,
+            BBS.Contents,
+            BBS.[File],
+            BBS.RegDate,
+            COUNT(BBSComment.ID) AS CommentCount
         FROM [dbo].[BBS]
-        WHERE ID = @ID;
+        LEFT JOIN [dbo].[BBSComment]
+            ON BBSComment.BbsID = BBS.ID
+        WHERE BBS.ID = @ID
+        GROUP BY BBS.ID, BBS.UserID, BBS.UserName, BBS.Title, BBS.Contents, BBS.[File], BBS.RegDate;
     END TRY
     BEGIN CATCH
         DECLARE @ErrorInputValue NVARCHAR(MAX);
@@ -389,6 +393,7 @@ END;
 GO
 
 CREATE OR ALTER PROCEDURE [dbo].[BBS_Insert]
+    @UserID NVARCHAR(50),
     @UserName NVARCHAR(50),
     @Title NVARCHAR(200),
     @Contents NVARCHAR(MAX),
@@ -401,6 +406,7 @@ BEGIN
     BEGIN TRY
         INSERT INTO [dbo].[BBS]
         (
+            UserID,
             UserName,
             Title,
             Contents,
@@ -409,6 +415,7 @@ BEGIN
         )
         VALUES
         (
+            @UserID,
             @UserName,
             @Title,
             @Contents,
@@ -424,6 +431,7 @@ BEGIN
         SET @ErrorInputValue =
         (
             SELECT
+                @UserID AS UserID,
                 @UserName AS UserName,
                 @Title AS Title,
                 @Contents AS Contents,
@@ -441,6 +449,7 @@ GO
 
 CREATE OR ALTER PROCEDURE [dbo].[BBS_Update]
     @ID INT,
+    @UserID NVARCHAR(50),
     @UserName NVARCHAR(50),
     @Title NVARCHAR(200),
     @Contents NVARCHAR(MAX),
@@ -456,7 +465,8 @@ BEGIN
             Title = @Title,
             Contents = @Contents,
             [File] = @File
-        WHERE ID = @ID;
+                WHERE ID = @ID
+                    AND UserID = @UserID;
     END TRY
     BEGIN CATCH
         DECLARE @ErrorInputValue NVARCHAR(MAX);
@@ -465,6 +475,7 @@ BEGIN
         (
             SELECT
                 @ID AS ID,
+                @UserID AS UserID,
                 @UserName AS UserName,
                 @Title AS Title,
                 @Contents AS Contents,
@@ -480,14 +491,16 @@ END;
 GO
 
 CREATE OR ALTER PROCEDURE [dbo].[BBS_Delete]
-    @ID INT
+    @ID INT,
+    @UserID NVARCHAR(50)
 AS
 BEGIN
     SET NOCOUNT ON;
 
     BEGIN TRY
         DELETE FROM [dbo].[BBS]
-        WHERE ID = @ID;
+                WHERE ID = @ID
+                    AND UserID = @UserID;
     END TRY
     BEGIN CATCH
         DECLARE @ErrorInputValue NVARCHAR(MAX);
@@ -495,7 +508,8 @@ BEGIN
         SET @ErrorInputValue =
         (
             SELECT
-                @ID AS ID
+                @ID AS ID,
+                @UserID AS UserID
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 

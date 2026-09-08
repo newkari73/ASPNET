@@ -122,6 +122,7 @@ h1 {
 }
 
 .post-title:hover { color: var(--accent); }
+.comment-count { color: var(--accent); font-family: system-ui, sans-serif; font-size: .75rem; font-weight: 700; margin-left: .35rem; }
 .date-column, .file-column { color: var(--muted); font-family: system-ui, sans-serif; font-size: .85rem; }
 .empty-state { color: var(--muted); padding: 4rem !important; text-align: center; }
 .pagination-nav { display: flex; justify-content: center; gap: .35rem; margin: 1.5rem 0 3rem; }

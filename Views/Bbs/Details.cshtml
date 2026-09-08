@@ -16,11 +16,14 @@
     }
     <div class="post-actions">
         <a class="btn btn-outline-secondary" asp-action="Index">목록</a>
-        <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Post.ID">수정</a>
-        <form asp-action="Delete" asp-route-id="@Model.Post.ID" method="post" onsubmit="return confirm('이 게시글을 삭제할까요?');">
-            @Html.AntiForgeryToken()
-            <button class="btn btn-outline-danger" type="submit">삭제</button>
-        </form>
+        @if (Model.Post.UserID == Context.Session.GetString("UserID"))
+        {
+            <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Post.ID">수정</a>
+            <form asp-action="Delete" asp-route-id="@Model.Post.ID" method="post" onsubmit="return confirm('이 게시글을 삭제할까요?');">
+                @Html.AntiForgeryToken()
+                <button class="btn btn-outline-danger" type="submit">삭제</button>
+            </form>
+        }
     </div>
 </article>
 
