@@ -289,11 +289,18 @@ BEGIN
     (
         ID INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_BBSComment PRIMARY KEY,
         BbsID INT NOT NULL,
+        UserID NVARCHAR(50) NULL,
         UserName NVARCHAR(50) NOT NULL,
         Contents NVARCHAR(1000) NOT NULL,
         RegDate DATETIME NOT NULL CONSTRAINT DF_BBSComment_RegDate DEFAULT GETDATE(),
         CONSTRAINT FK_BBSComment_BBS FOREIGN KEY (BbsID) REFERENCES dbo.BBS(ID) ON DELETE CASCADE
     );
+END;
+GO
+
+IF COL_LENGTH(N'dbo.BBSComment', N'UserID') IS NULL
+BEGIN
+    ALTER TABLE dbo.BBSComment ADD UserID NVARCHAR(50) NULL;
 END;
 GO
 
@@ -530,6 +537,7 @@ BEGIN
         SELECT
             ID,
             BbsID,
+            UserID,
             UserName,
             Contents,
             RegDate
@@ -556,6 +564,7 @@ GO
 
 CREATE OR ALTER PROCEDURE [dbo].[BBSComment_Insert]
     @BbsID INT,
+    @UserID NVARCHAR(50),
     @UserName NVARCHAR(50),
     @Contents NVARCHAR(1000)
 AS
@@ -566,6 +575,7 @@ BEGIN
         INSERT INTO [dbo].[BBSComment]
         (
             BbsID,
+            UserID,
             UserName,
             Contents,
             RegDate
@@ -573,6 +583,7 @@ BEGIN
         VALUES
         (
             @BbsID,
+            @UserID,
             @UserName,
             @Contents,
             GETDATE()
@@ -585,6 +596,7 @@ BEGIN
         (
             SELECT
                 @BbsID AS BbsID,
+                @UserID AS UserID,
                 @UserName AS UserName,
                 @Contents AS Contents
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
@@ -598,14 +610,16 @@ END;
 GO
 
 CREATE OR ALTER PROCEDURE [dbo].[BBSComment_Delete]
-    @ID INT
+    @ID INT,
+    @UserID NVARCHAR(50)
 AS
 BEGIN
     SET NOCOUNT ON;
 
     BEGIN TRY
         DELETE FROM [dbo].[BBSComment]
-        WHERE ID = @ID;
+        WHERE ID = @ID
+          AND UserID = @UserID;
     END TRY
     BEGIN CATCH
         DECLARE @ErrorInputValue NVARCHAR(MAX);
@@ -613,7 +627,8 @@ BEGIN
         SET @ErrorInputValue =
         (
             SELECT
-                @ID AS ID
+                @ID AS ID,
+                @UserID AS UserID
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 

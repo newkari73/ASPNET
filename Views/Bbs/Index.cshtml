@@ -50,19 +50,29 @@
 @if (Model.TotalPages > 1)
 {
     <nav class="pagination-nav" aria-label="게시판 페이지 이동">
+        @if (Model.HasPreviousBlock)
+        {
+            <a class="page-link" asp-action="Index" asp-route-page="@(Model.StartPage - 1)" aria-label="이전 10페이지">&laquo;</a>
+        }
+
         @if (Model.CurrentPage > 1)
         {
             <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)" aria-label="이전 페이지">&lsaquo;</a>
         }
 
-        @for (var pageNumber = 1; pageNumber <= Model.TotalPages; pageNumber++)
+        @for (var pageNum = Model.StartPage; pageNum <= Model.EndPage; pageNum++)
         {
-            <a class="page-link @(pageNumber == Model.CurrentPage ? "active" : "")" asp-action="Index" asp-route-page="@pageNumber">@pageNumber</a>
+            <a class="page-link @(pageNum == Model.CurrentPage ? "active" : "")" asp-action="Index" asp-route-page="@pageNum">@pageNum</a>
         }
 
         @if (Model.CurrentPage < Model.TotalPages)
         {
             <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)" aria-label="다음 페이지">&rsaquo;</a>
+        }
+
+        @if (Model.HasNextBlock)
+        {
+            <a class="page-link" asp-action="Index" asp-route-page="@(Model.EndPage + 1)" aria-label="다음 10페이지">&raquo;</a>
         }
     </nav>
 }

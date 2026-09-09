@@ -37,12 +37,19 @@ public class BbsPageViewModel
     public int PageSize { get; init; }
     public int TotalCount { get; init; }
     public int TotalPages => (int)Math.Ceiling(TotalCount / (double)PageSize);
+
+    public int PageBlockSize { get; init; } = 10;
+    public int StartPage => ((CurrentPage - 1) / PageBlockSize) * PageBlockSize + 1;
+    public int EndPage => Math.Min(StartPage + PageBlockSize - 1, TotalPages);
+    public bool HasPreviousBlock => StartPage > 1;
+    public bool HasNextBlock => EndPage < TotalPages;
 }
 
 public class BbsComment
 {
     public int ID { get; set; }
     public int BbsID { get; set; }
+    public string? UserID { get; set; }
 
     [Required(ErrorMessage = "이름을 입력해 주세요.")]
     [StringLength(50, ErrorMessage = "이름은 50자 이내로 입력해 주세요.")]

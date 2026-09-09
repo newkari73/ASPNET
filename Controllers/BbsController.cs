@@ -154,7 +154,9 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
         }
 
         comment.UserName = CurrentUserName;
+        comment.UserID = CurrentUserId;
         ModelState.Remove(nameof(BbsComment.UserName));
+        ModelState.Remove(nameof(BbsComment.UserID));
         if (!ModelState.IsValid)
         {
             return RedirectToAction(nameof(Details), new { id = bbsId });
@@ -164,6 +166,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
         await connection.OpenAsync();
         await using var command = CreateCommand(connection, "dbo.BBSComment_Insert");
         command.Parameters.Add("@BbsID", SqlDbType.Int).Value = comment.BbsID;
+        command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = comment.UserID;
         command.Parameters.Add("@UserName", SqlDbType.NVarChar, 50).Value = comment.UserName;
         command.Parameters.Add("@Contents", SqlDbType.NVarChar, 1000).Value = comment.Contents;
         await command.ExecuteNonQueryAsync();
@@ -178,6 +181,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
         await connection.OpenAsync();
         await using var command = CreateCommand(connection, "dbo.BBSComment_Delete");
         command.Parameters.Add("@ID", SqlDbType.Int).Value = id;
+        command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = CurrentUserId;
         await command.ExecuteNonQueryAsync();
         return RedirectToAction(nameof(Details), new { id = bbsId });
     }
@@ -254,6 +258,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
             {
                 ID = reader.GetInt32(reader.GetOrdinal("ID")),
                 BbsID = reader.GetInt32(reader.GetOrdinal("BbsID")),
+                UserID = reader.IsDBNull(reader.GetOrdinal("UserID")) ? null : reader.GetString(reader.GetOrdinal("UserID")),
                 UserName = reader.GetString(reader.GetOrdinal("UserName")),
                 Contents = reader.GetString(reader.GetOrdinal("Contents")),
                 RegDate = reader.GetDateTime(reader.GetOrdinal("RegDate"))
