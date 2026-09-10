@@ -610,6 +610,7 @@ END;
 GO
 
 CREATE OR ALTER PROCEDURE [dbo].[BBSComment_Delete]
+    @ID INT
     @ID INT,
     @UserID NVARCHAR(50)
 AS
@@ -618,6 +619,7 @@ BEGIN
 
     BEGIN TRY
         DELETE FROM [dbo].[BBSComment]
+        WHERE ID = @ID;
         WHERE ID = @ID
           AND UserID = @UserID;
     END TRY
@@ -627,6 +629,7 @@ BEGIN
         SET @ErrorInputValue =
         (
             SELECT
+                @ID AS ID
                 @ID AS ID,
                 @UserID AS UserID
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER

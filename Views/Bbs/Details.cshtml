@@ -36,6 +36,10 @@
         <div class="comment-item">
             <div class="comment-meta"><strong>@comment.UserName</strong><time>@comment.RegDate.ToString("yyyy.MM.dd HH:mm")</time></div>
             <p>@comment.Contents</p>
+            <form asp-action="DeleteComment" asp-route-id="@comment.ID" asp-route-bbsId="@Model.Post.ID" method="post">
+                @Html.AntiForgeryToken()
+                <button class="comment-delete" type="submit">삭제</button>
+            </form>
             @if (comment.UserID == Context.Session.GetString("UserID"))
             {
                 <form asp-action="DeleteComment" asp-route-id="@comment.ID" asp-route-bbsId="@Model.Post.ID" method="post" onsubmit="return confirm('이 댓글을 삭제할까요?');">
