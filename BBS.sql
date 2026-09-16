@@ -12,7 +12,7 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[Member_SelectById]
+CREATE OR ALTER PROCEDURE [ExecWeb].[Member_SelectById]
     @UserID NVARCHAR(50)
 AS
 BEGIN
@@ -36,14 +36,14 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[Member_Insert]
+CREATE OR ALTER PROCEDURE [ExecWeb].[Member_Insert]
     @UserID NVARCHAR(50),
     @UserName NVARCHAR(50),
     @UserPWD NVARCHAR(500)
@@ -77,7 +77,7 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
@@ -122,7 +122,7 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[Schedule_SelectByMonth]
+CREATE OR ALTER PROCEDURE [ExecWeb].[Schedule_SelectByMonth]
     @UserID NVARCHAR(50),
     @Month DATE
 AS
@@ -155,14 +155,14 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[Schedule_Insert]
+CREATE OR ALTER PROCEDURE [ExecWeb].[Schedule_Insert]
     @UserID NVARCHAR(50),
     @StartDateTime DATETIME2,
     @EndDateTime DATETIME2,
@@ -206,14 +206,14 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[Schedule_Delete]
+CREATE OR ALTER PROCEDURE [ExecWeb].[Schedule_Delete]
     @ID INT,
     @UserID NVARCHAR(50)
 AS
@@ -236,7 +236,7 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
@@ -304,7 +304,7 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[BBS_SelectAll]
+CREATE OR ALTER PROCEDURE [ExecWeb].[BBS_SelectAll]
     @Page INT = 1,
     @PageSize INT = 10
 AS
@@ -353,14 +353,14 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[BBS_SelectById]
+CREATE OR ALTER PROCEDURE [ExecWeb].[BBS_SelectById]
     @ID INT
 AS
 BEGIN
@@ -392,14 +392,14 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[BBS_Insert]
+CREATE OR ALTER PROCEDURE [ExecWeb].[BBS_Insert]
     @UserID NVARCHAR(50),
     @UserName NVARCHAR(50),
     @Title NVARCHAR(200),
@@ -447,14 +447,14 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[BBS_Update]
+CREATE OR ALTER PROCEDURE [ExecWeb].[BBS_Update]
     @ID INT,
     @UserID NVARCHAR(50),
     @UserName NVARCHAR(50),
@@ -490,14 +490,14 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[BBS_Delete]
+CREATE OR ALTER PROCEDURE [ExecWeb].[BBS_Delete]
     @ID INT,
     @UserID NVARCHAR(50)
 AS
@@ -520,14 +520,14 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[BBSComment_SelectByBbsId]
+CREATE OR ALTER PROCEDURE [ExecWeb].[BBSComment_SelectByBbsId]
     @BbsID INT
 AS
 BEGIN
@@ -555,14 +555,14 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[BBSComment_Insert]
+CREATE OR ALTER PROCEDURE [ExecWeb].[BBSComment_Insert]
     @BbsID INT,
     @UserID NVARCHAR(50),
     @UserName NVARCHAR(50),
@@ -602,14 +602,14 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
 END;
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[BBSComment_Delete]
+CREATE OR ALTER PROCEDURE [ExecWeb].[BBSComment_Delete]
     @ID INT
     @ID INT,
     @UserID NVARCHAR(50)
@@ -635,7 +635,7 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         );
 
-        EXEC [dbo].[c_RaiseError] @ErrorInputValue;
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
 
         RETURN 0;
     END CATCH;
