@@ -55,7 +55,7 @@ public class ScheduleController(IConfiguration configuration) : Controller
         {
             await using var connection = new SqlConnection(connectionString);
             await connection.OpenAsync();
-            await using var command = CreateCommand(connection, "dbo.Schedule_Insert");
+            await using var command = CreateCommand(connection, "ExecWeb.Schedule_Insert");
             command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = CurrentUserId;
             command.Parameters.Add("@StartDateTime", SqlDbType.DateTime2).Value = model.StartDateTime;
             command.Parameters.Add("@EndDateTime", SqlDbType.DateTime2).Value = model.EndDateTime;
@@ -76,7 +76,7 @@ public class ScheduleController(IConfiguration configuration) : Controller
     {
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        await using var command = CreateCommand(connection, "dbo.Schedule_Delete");
+        await using var command = CreateCommand(connection, "ExecWeb.Schedule_Delete");
         command.Parameters.Add("@ID", SqlDbType.Int).Value = id;
         command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = CurrentUserId;
         await command.ExecuteNonQueryAsync();
@@ -92,7 +92,7 @@ public class ScheduleController(IConfiguration configuration) : Controller
         var schedules = new List<ScheduleItem>();
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        await using var command = CreateCommand(connection, "dbo.Schedule_SelectByMonth");
+        await using var command = CreateCommand(connection, "ExecWeb.Schedule_SelectByMonth");
         command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = userId;
         command.Parameters.Add("@Month", SqlDbType.Date).Value = month.Date;
         await using var reader = await command.ExecuteReaderAsync();

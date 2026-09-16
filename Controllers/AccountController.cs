@@ -63,7 +63,7 @@ public class AccountController(IConfiguration configuration) : Controller
         var passwordHash = passwordHasher.HashPassword(userId, model.UserPWD);
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        await using var command = CreateCommand(connection, "dbo.Member_Insert");
+        await using var command = CreateCommand(connection, "ExecWeb.Member_Insert");
         command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = userId;
         command.Parameters.Add("@UserName", SqlDbType.NVarChar, 50).Value = model.UserName.Trim();
         command.Parameters.Add("@UserPWD", SqlDbType.NVarChar, 500).Value = passwordHash;
@@ -95,7 +95,7 @@ public class AccountController(IConfiguration configuration) : Controller
     {
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        await using var command = CreateCommand(connection, "dbo.Member_SelectById");
+        await using var command = CreateCommand(connection, "ExecWeb.Member_SelectById");
         command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = userId.Trim();
         await using var reader = await command.ExecuteReaderAsync();
         return await reader.ReadAsync()

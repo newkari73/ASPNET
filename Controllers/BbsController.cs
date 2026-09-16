@@ -29,7 +29,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
         var posts = new List<BbsPost>();
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        await using var command = CreateCommand(connection, "dbo.BBS_SelectAll");
+        await using var command = CreateCommand(connection, "ExecWeb.BBS_SelectAll");
         command.Parameters.Add("@Page", SqlDbType.Int).Value = page;
         command.Parameters.Add("@PageSize", SqlDbType.Int).Value = pageSize;
         await using var reader = await command.ExecuteReaderAsync();
@@ -87,7 +87,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
 
         post.RegDate = DateTime.Now;
         post.File = await SaveFileAsync(upload);
-        await ExecuteAsync("dbo.BBS_Insert", post, includeId: false);
+        await ExecuteAsync("ExecWeb.BBS_Insert", post, includeId: false);
         return RedirectToAction(nameof(Index));
     }
 
@@ -127,7 +127,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
 
         post.UserName = CurrentUserName;
         post.File = await SaveFileAsync(upload) ?? post.File;
-        await ExecuteAsync("dbo.BBS_Update", post, includeId: true);
+        await ExecuteAsync("ExecWeb.BBS_Update", post, includeId: true);
         return RedirectToAction(nameof(Details), new { id = post.ID });
     }
 
@@ -137,7 +137,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
     {
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        await using var command = CreateCommand(connection, "dbo.BBS_Delete");
+        await using var command = CreateCommand(connection, "ExecWeb.BBS_Delete");
         command.Parameters.Add("@ID", SqlDbType.Int).Value = id;
         command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = CurrentUserId;
         await command.ExecuteNonQueryAsync();
@@ -164,7 +164,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
 
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        await using var command = CreateCommand(connection, "dbo.BBSComment_Insert");
+        await using var command = CreateCommand(connection, "ExecWeb.BBSComment_Insert");
         command.Parameters.Add("@BbsID", SqlDbType.Int).Value = comment.BbsID;
         command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = comment.UserID;
         command.Parameters.Add("@UserName", SqlDbType.NVarChar, 50).Value = comment.UserName;
@@ -179,7 +179,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
     {
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        await using var command = CreateCommand(connection, "dbo.BBSComment_Delete");
+        await using var command = CreateCommand(connection, "ExecWeb.BBSComment_Delete");
         command.Parameters.Add("@ID", SqlDbType.Int).Value = id;
         command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = CurrentUserId;
         await command.ExecuteNonQueryAsync();
@@ -190,7 +190,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
     {
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        await using var command = CreateCommand(connection, "dbo.BBS_SelectById");
+        await using var command = CreateCommand(connection, "ExecWeb.BBS_SelectById");
         command.Parameters.Add("@ID", SqlDbType.Int).Value = id;
         await using var reader = await command.ExecuteReaderAsync();
         return await reader.ReadAsync() ? MapPost(reader) : null;
@@ -249,7 +249,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
         var comments = new List<BbsComment>();
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        await using var command = CreateCommand(connection, "dbo.BBSComment_SelectByBbsId");
+        await using var command = CreateCommand(connection, "ExecWeb.BBSComment_SelectByBbsId");
         command.Parameters.Add("@BbsID", SqlDbType.Int).Value = bbsId;
         await using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
