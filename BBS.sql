@@ -544,6 +544,7 @@ BEGIN
         FROM [dbo].[BBSComment]
         WHERE BbsID = @BbsID
         ORDER BY ID ASC;
+        ORDER BY ID DESC;
     END TRY
     BEGIN CATCH
         DECLARE @ErrorInputValue NVARCHAR(MAX);
