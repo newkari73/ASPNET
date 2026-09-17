@@ -11,6 +11,8 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromHours(8);
 });
 
+builder.Services.AddSingleton<AspNetBbs.Services.ISystemMetricsService, AspNetBbs.Services.SystemMetricsService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
