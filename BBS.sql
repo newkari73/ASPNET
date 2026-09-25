@@ -84,6 +84,105 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.MemberSocialLogin', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[MemberSocialLogin]
+    (
+        ID INT IDENTITY(1, 1) NOT NULL CONSTRAINT PK_MemberSocialLogin PRIMARY KEY,
+        UserID NVARCHAR(50) NOT NULL CONSTRAINT FK_MemberSocialLogin_Member FOREIGN KEY REFERENCES [dbo].[Member](UserID) ON DELETE CASCADE,
+        Provider NVARCHAR(50) NOT NULL,
+        ProviderKey NVARCHAR(100) NOT NULL,
+        Email NVARCHAR(100) NULL,
+        RegDate DATETIME NOT NULL CONSTRAINT DF_MemberSocialLogin_RegDate DEFAULT GETDATE(),
+        CONSTRAINT UQ_MemberSocialLogin_Provider_ProviderKey UNIQUE (Provider, ProviderKey)
+    );
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[MemberSocialLogin_SelectByProviderKey]
+    @Provider NVARCHAR(50),
+    @ProviderKey NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        SELECT
+            M.UserID,
+            M.UserName,
+            SL.Email
+        FROM [dbo].[MemberSocialLogin] AS SL
+        INNER JOIN [dbo].[Member] AS M
+            ON M.UserID = SL.UserID
+        WHERE SL.Provider = @Provider
+          AND SL.ProviderKey = @ProviderKey;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+
+        SET @ErrorInputValue =
+        (
+            SELECT
+                @Provider AS Provider,
+                @ProviderKey AS ProviderKey
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[MemberSocialLogin_Insert]
+    @UserID NVARCHAR(50),
+    @Provider NVARCHAR(50),
+    @ProviderKey NVARCHAR(100),
+    @Email NVARCHAR(100) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        INSERT INTO [dbo].[MemberSocialLogin]
+        (
+            UserID,
+            Provider,
+            ProviderKey,
+            Email,
+            RegDate
+        )
+        VALUES
+        (
+            @UserID,
+            @Provider,
+            @ProviderKey,
+            @Email,
+            GETDATE()
+        );
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+
+        SET @ErrorInputValue =
+        (
+            SELECT
+                @UserID AS UserID,
+                @Provider AS Provider,
+                @ProviderKey AS ProviderKey,
+                @Email AS Email
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+
 IF OBJECT_ID(N'dbo.Schedule', N'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[Schedule]
@@ -543,7 +642,6 @@ BEGIN
             RegDate
         FROM [dbo].[BBSComment]
         WHERE BbsID = @BbsID
-        ORDER BY ID ASC;
         ORDER BY ID DESC;
     END TRY
     BEGIN CATCH
@@ -611,7 +709,6 @@ END;
 GO
 
 CREATE OR ALTER PROCEDURE [ExecWeb].[BBSComment_Delete]
-    @ID INT
     @ID INT,
     @UserID NVARCHAR(50)
 AS
@@ -620,7 +717,6 @@ BEGIN
 
     BEGIN TRY
         DELETE FROM [dbo].[BBSComment]
-        WHERE ID = @ID;
         WHERE ID = @ID
           AND UserID = @UserID;
     END TRY
@@ -630,7 +726,6 @@ BEGIN
         SET @ErrorInputValue =
         (
             SELECT
-                @ID AS ID
                 @ID AS ID,
                 @UserID AS UserID
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
