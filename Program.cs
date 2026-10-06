@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +15,7 @@ builder.Services.AddSession(options =>
 });
 
 builder.Services.AddSingleton<AspNetBbs.Services.ISystemMetricsService, AspNetBbs.Services.SystemMetricsService>();
+builder.Services.AddScoped<AspNetBbs.Services.IPermissionService, AspNetBbs.Services.PermissionService>();
 
 var authBuilder = builder.Services.AddAuthentication(options =>
 {

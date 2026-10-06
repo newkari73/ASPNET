@@ -1,4 +1,5 @@
-using AspNetBbs.Models;
+﻿using AspNetBbs.Models;
+using AspNetBbs.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Data.SqlClient;
@@ -6,7 +7,7 @@ using System.Data;
 
 namespace AspNetBbs.Controllers;
 
-public class BbsController(IConfiguration configuration, IWebHostEnvironment environment) : Controller
+public class BbsController(IConfiguration configuration, IWebHostEnvironment environment, IPermissionService permissionService) : Controller
 {
     private readonly string connectionString = configuration.GetConnectionString("DefaultConnection")
         ?? throw new InvalidOperationException("DefaultConnection이 설정되지 않았습니다.");
@@ -24,6 +25,12 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
 
     public async Task<IActionResult> Index(int page = 1)
     {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Read))
+        {
+            TempData["ErrorMessage"] = "게시판 조회 권한이 없습니다.";
+            return RedirectToAction("Index", "Home");
+        }
+
         const int pageSize = 10;
         page = Math.Max(page, 1);
         var posts = new List<BbsPost>();
@@ -58,6 +65,12 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
 
     public async Task<IActionResult> Details(int id)
     {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Read))
+        {
+            TempData["ErrorMessage"] = "게시판 조회 권한이 없습니다.";
+            return RedirectToAction("Index", "Home");
+        }
+
         var post = await FindPostAsync(id);
         if (post is null)
         {
@@ -71,12 +84,27 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
         });
     }
 
-    public IActionResult Create() => View(new BbsPost());
+    public async Task<IActionResult> Create()
+    {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Update))
+        {
+            TempData["ErrorMessage"] = "게시판 글 작성 권한이 없습니다.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(new BbsPost());
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(BbsPost post, IFormFile? upload)
     {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Update))
+        {
+            TempData["ErrorMessage"] = "게시판 글 작성 권한이 없습니다.";
+            return RedirectToAction(nameof(Index));
+        }
+
         post.UserName = CurrentUserName;
         post.UserID = CurrentUserId;
         ModelState.Remove(nameof(BbsPost.UserName));
@@ -93,6 +121,12 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
 
     public async Task<IActionResult> Edit(int id)
     {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Update))
+        {
+            TempData["ErrorMessage"] = "게시판 글 수정 권한이 없습니다.";
+            return RedirectToAction(nameof(Index));
+        }
+
         var post = await FindPostAsync(id);
         if (post is null)
         {
@@ -106,6 +140,12 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, BbsPost post, IFormFile? upload)
     {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Update))
+        {
+            TempData["ErrorMessage"] = "게시판 글 수정 권한이 없습니다.";
+            return RedirectToAction(nameof(Index));
+        }
+
         if (id != post.ID)
         {
             return BadRequest();
@@ -135,6 +175,12 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Delete))
+        {
+            TempData["ErrorMessage"] = "게시판 글 삭제 권한이 없습니다.";
+            return RedirectToAction(nameof(Index));
+        }
+
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
         await using var command = CreateCommand(connection, "ExecWeb.BBS_Delete");
@@ -148,6 +194,12 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddComment(int bbsId, BbsComment comment)
     {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Update))
+        {
+            TempData["ErrorMessage"] = "댓글 작성 권한이 없습니다.";
+            return RedirectToAction(nameof(Details), new { id = bbsId });
+        }
+
         if (bbsId != comment.BbsID)
         {
             return BadRequest();
@@ -177,6 +229,12 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteComment(int id, int bbsId)
     {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Delete))
+        {
+            TempData["ErrorMessage"] = "댓글 삭제 권한이 없습니다.";
+            return RedirectToAction(nameof(Details), new { id = bbsId });
+        }
+
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
         await using var command = CreateCommand(connection, "ExecWeb.BBSComment_Delete");

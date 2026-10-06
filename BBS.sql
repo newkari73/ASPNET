@@ -739,4 +739,274 @@ END;
 GO
 
 CREATE INDEX IX_BBS_RegDate ON dbo.BBS (RegDate DESC);
+GO-- 1. Member 테이블에 IsAdmin 컬럼 추가
+IF COL_LENGTH(N'dbo.Member', N'IsAdmin') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[Member] ADD IsAdmin BIT NOT NULL CONSTRAINT DF_Member_IsAdmin DEFAULT 0;
+END;
+GO
+
+-- kari73을 관리자로 설정
+UPDATE [dbo].[Member]
+SET IsAdmin = 1
+WHERE UserID = N'kari73';
+GO
+
+-- 2. Menu 테이블 생성
+IF OBJECT_ID(N'dbo.Menu', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Menu]
+    (
+        MenuCode NVARCHAR(50) NOT NULL CONSTRAINT PK_Menu PRIMARY KEY,
+        MenuName NVARCHAR(100) NOT NULL,
+        ControllerName NVARCHAR(50) NOT NULL,
+        ActionName NVARCHAR(50) NOT NULL CONSTRAINT DF_Menu_ActionName DEFAULT N'Index',
+        SortOrder INT NOT NULL CONSTRAINT DF_Menu_SortOrder DEFAULT 1,
+        IsActive BIT NOT NULL CONSTRAINT DF_Menu_IsActive DEFAULT 1
+    );
+END;
+GO
+
+-- 초기 메뉴 데이터 등록
+IF NOT EXISTS (SELECT 1 FROM [dbo].[Menu] WHERE MenuCode = N'BBS')
+    INSERT INTO [dbo].[Menu] (MenuCode, MenuName, ControllerName, ActionName, SortOrder, IsActive)
+    VALUES (N'BBS', N'게시판', N'Bbs', N'Index', 1, 1);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[Menu] WHERE MenuCode = N'SCHEDULE')
+    INSERT INTO [dbo].[Menu] (MenuCode, MenuName, ControllerName, ActionName, SortOrder, IsActive)
+    VALUES (N'SCHEDULE', N'일정관리', N'Schedule', N'Index', 2, 1);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[Menu] WHERE MenuCode = N'MONITORING')
+    INSERT INTO [dbo].[Menu] (MenuCode, MenuName, ControllerName, ActionName, SortOrder, IsActive)
+    VALUES (N'MONITORING', N'모니터링', N'Monitoring', N'Index', 3, 1);
+GO
+
+-- 3. MemberMenuPermission 테이블 생성
+IF OBJECT_ID(N'dbo.MemberMenuPermission', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[MemberMenuPermission]
+    (
+        ID INT IDENTITY(1, 1) NOT NULL CONSTRAINT PK_MemberMenuPermission PRIMARY KEY,
+        UserID NVARCHAR(50) NOT NULL CONSTRAINT FK_MemberMenuPermission_Member FOREIGN KEY REFERENCES [dbo].[Member](UserID) ON DELETE CASCADE,
+        MenuCode NVARCHAR(50) NOT NULL CONSTRAINT FK_MemberMenuPermission_Menu FOREIGN KEY REFERENCES [dbo].[Menu](MenuCode) ON DELETE CASCADE,
+        CanRead BIT NOT NULL CONSTRAINT DF_MemberMenuPermission_CanRead DEFAULT 1,
+        CanUpdate BIT NOT NULL CONSTRAINT DF_MemberMenuPermission_CanUpdate DEFAULT 1,
+        CanDelete BIT NOT NULL CONSTRAINT DF_MemberMenuPermission_CanDelete DEFAULT 1,
+        RegDate DATETIME NOT NULL CONSTRAINT DF_MemberMenuPermission_RegDate DEFAULT GETDATE(),
+        UpdateDate DATETIME NULL,
+        CONSTRAINT UQ_MemberMenuPermission_User_Menu UNIQUE (UserID, MenuCode)
+    );
+END;
+GO
+
+-- 기존 사용자들에게 기본 권한 부여 (아직 없는 경우)
+INSERT INTO [dbo].[MemberMenuPermission] (UserID, MenuCode, CanRead, CanUpdate, CanDelete)
+SELECT M.UserID, MN.MenuCode, 1, 1, 1
+FROM [dbo].[Member] AS M
+CROSS JOIN [dbo].[Menu] AS MN
+LEFT JOIN [dbo].[MemberMenuPermission] AS P
+    ON P.UserID = M.UserID AND P.MenuCode = MN.MenuCode
+WHERE P.ID IS NULL;
+GO
+
+-- 4. 저장 프로시저 정의
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[Menu_SelectAll]
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        SELECT
+            MenuCode,
+            MenuName,
+            ControllerName,
+            ActionName,
+            SortOrder,
+            IsActive
+        FROM [dbo].[Menu]
+        WHERE IsActive = 1
+        ORDER BY SortOrder ASC;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+
+        SET @ErrorInputValue = N'{}';
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[MemberMenuPermission_SelectByUserId]
+    @UserID NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        SELECT
+            M.MenuCode,
+            M.MenuName,
+            M.ControllerName,
+            M.ActionName,
+            M.SortOrder,
+            CONVERT(BIT, ISNULL(P.CanRead, 1)) AS CanRead,
+            CONVERT(BIT, ISNULL(P.CanUpdate, 1)) AS CanUpdate,
+            CONVERT(BIT, ISNULL(P.CanDelete, 1)) AS CanDelete
+        FROM [dbo].[Menu] AS M
+        CROSS JOIN [dbo].[Member] AS MB
+        LEFT JOIN [dbo].[MemberMenuPermission] AS P
+            ON P.MenuCode = M.MenuCode AND P.UserID = MB.UserID
+        WHERE MB.UserID = @UserID
+          AND M.IsActive = 1
+        ORDER BY M.SortOrder ASC;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+
+        SET @ErrorInputValue =
+        (
+            SELECT
+                @UserID AS UserID
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[MemberMenuPermission_Save]
+    @UserID NVARCHAR(50),
+    @MenuCode NVARCHAR(50),
+    @CanRead BIT,
+    @CanUpdate BIT,
+    @CanDelete BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        IF EXISTS (SELECT 1 FROM [dbo].[MemberMenuPermission] WHERE UserID = @UserID AND MenuCode = @MenuCode)
+        BEGIN
+            UPDATE [dbo].[MemberMenuPermission]
+            SET
+                CanRead = @CanRead,
+                CanUpdate = @CanUpdate,
+                CanDelete = @CanDelete,
+                UpdateDate = GETDATE()
+            WHERE UserID = @UserID
+              AND MenuCode = @MenuCode;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO [dbo].[MemberMenuPermission]
+            (
+                UserID,
+                MenuCode,
+                CanRead,
+                CanUpdate,
+                CanDelete,
+                RegDate
+            )
+            VALUES
+            (
+                @UserID,
+                @MenuCode,
+                @CanRead,
+                @CanUpdate,
+                @CanDelete,
+                GETDATE()
+            );
+        END
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+
+        SET @ErrorInputValue =
+        (
+            SELECT
+                @UserID AS UserID,
+                @MenuCode AS MenuCode,
+                @CanRead AS CanRead,
+                @CanUpdate AS CanUpdate,
+                @CanDelete AS CanDelete
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[Member_SelectAllWithPermissions]
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        SELECT
+            MB.UserID,
+            MB.UserName,
+            MB.IsAdmin,
+            M.MenuCode,
+            M.MenuName,
+            CONVERT(BIT, ISNULL(P.CanRead, 1)) AS CanRead,
+            CONVERT(BIT, ISNULL(P.CanUpdate, 1)) AS CanUpdate,
+            CONVERT(BIT, ISNULL(P.CanDelete, 1)) AS CanDelete
+        FROM [dbo].[Member] AS MB
+        CROSS JOIN [dbo].[Menu] AS M
+        LEFT JOIN [dbo].[MemberMenuPermission] AS P
+            ON P.UserID = MB.UserID AND P.MenuCode = M.MenuCode
+        WHERE M.IsActive = 1
+        ORDER BY MB.IsAdmin DESC, MB.UserID ASC, M.SortOrder ASC;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+
+        SET @ErrorInputValue = N'{}';
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[Member_CheckIsAdmin]
+    @UserID NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        SELECT
+            ISNULL(IsAdmin, 0) AS IsAdmin
+        FROM [dbo].[Member]
+        WHERE UserID = @UserID;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+
+        SET @ErrorInputValue =
+        (
+            SELECT
+                @UserID AS UserID
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+
+        RETURN 0;
+    END CATCH;
+END;
 GO

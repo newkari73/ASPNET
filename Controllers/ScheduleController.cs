@@ -1,4 +1,5 @@
-using AspNetBbs.Models;
+﻿using AspNetBbs.Models;
+using AspNetBbs.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Data.SqlClient;
@@ -6,7 +7,7 @@ using System.Data;
 
 namespace AspNetBbs.Controllers;
 
-public class ScheduleController(IConfiguration configuration) : Controller
+public class ScheduleController(IConfiguration configuration, IPermissionService permissionService) : Controller
 {
     private readonly string connectionString = configuration.GetConnectionString("DefaultConnection")
         ?? throw new InvalidOperationException("DefaultConnection이 설정되지 않았습니다.");
@@ -24,6 +25,12 @@ public class ScheduleController(IConfiguration configuration) : Controller
 
     public async Task<IActionResult> Index(DateTime? month, DateTime? selectedDate)
     {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "SCHEDULE", PermissionType.Read))
+        {
+            TempData["ErrorMessage"] = "일정관리 조회 권한이 없습니다.";
+            return RedirectToAction("Index", "Home");
+        }
+
         var currentMonth = new DateTime((month ?? DateTime.Today).Year, (month ?? DateTime.Today).Month, 1);
         var selected = (selectedDate ?? currentMonth).Date;
         var userId = CurrentUserId;
@@ -46,6 +53,11 @@ public class ScheduleController(IConfiguration configuration) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(ScheduleFormModel model)
     {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "SCHEDULE", PermissionType.Update))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "일정 등록 권한이 없습니다." });
+        }
+
         if (!ModelState.IsValid || model.StartDateTime.Date < DateTime.Today || model.EndDateTime < model.StartDateTime)
         {
             return BadRequest(new { success = false, message = "지난 날짜는 등록할 수 없으며 완료 일시는 시작 일시보다 빠를 수 없습니다." });
@@ -74,6 +86,16 @@ public class ScheduleController(IConfiguration configuration) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id, DateTime selectedDate)
     {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "SCHEDULE", PermissionType.Delete))
+        {
+            if (Request.Headers.XRequestedWith == "XMLHttpRequest")
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "일정 삭제 권한이 없습니다." });
+            }
+            TempData["ErrorMessage"] = "일정 삭제 권한이 없습니다.";
+            return RedirectToAction(nameof(Index), new { selectedDate = selectedDate.ToString("yyyy-MM-dd") });
+        }
+
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
         await using var command = CreateCommand(connection, "ExecWeb.Schedule_Delete");

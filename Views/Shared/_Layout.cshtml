@@ -1,3 +1,8 @@
+﻿@inject AspNetBbs.Services.IPermissionService PermissionService
+@{
+    var currentUserId = Context.Session.GetString("UserID");
+    var userPerms = currentUserId is not null ? await PermissionService.GetUserPermissionsAsync(currentUserId) : null;
+}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -20,18 +25,48 @@
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Bbs" asp-action="Index">게시판</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Schedule" asp-action="Index">일정관리</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Monitoring" asp-action="Index">모니터링</a>
-                        </li>
-                        @if (Context.Session.GetString("UserID") is not null)
+                        @if (userPerms is not null)
                         {
-                            <li class="nav-item nav-user">
+                            @if (userPerms.CanRead("BBS"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Bbs" asp-action="Index">게시판</a>
+                                </li>
+                            }
+                            @if (userPerms.CanRead("SCHEDULE"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Schedule" asp-action="Index">일정관리</a>
+                                </li>
+                            }
+                            @if (userPerms.CanRead("MONITORING"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Monitoring" asp-action="Index">모니터링</a>
+                                </li>
+                            }
+                            @if (userPerms.IsAdmin)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-primary fw-bold" asp-area="" asp-controller="Permission" asp-action="Index">권한관리</a>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Bbs" asp-action="Index">게시판</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Schedule" asp-action="Index">일정관리</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Monitoring" asp-action="Index">모니터링</a>
+                            </li>
+                        }
+                        @if (currentUserId is not null)
+                        {
+                            <li class="nav-item nav-user ms-auto">
                                 <span class="nav-link">@Context.Session.GetString("UserName")님</span>
                             </li>
                             <li class="nav-item">
@@ -48,6 +83,20 @@
     </header>
     <div class="container">
         <main role="main" class="pb-3">
+            @if (TempData["ErrorMessage"] is not null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["Message"] is not null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Message"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
             @RenderBody()
         </main>
     </div>
