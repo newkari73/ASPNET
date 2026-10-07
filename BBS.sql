@@ -397,6 +397,353 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.PhotoBBS', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.PhotoBBS
+    (
+        ID INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_PhotoBBS PRIMARY KEY,
+        UserID NVARCHAR(50) NULL,
+        UserName NVARCHAR(50) NULL,
+        Title NVARCHAR(200) NOT NULL,
+        Contents NVARCHAR(MAX) NOT NULL,
+        [File] NVARCHAR(500) NULL,
+        RegDate DATETIME NOT NULL
+            CONSTRAINT DF_PhotoBBS_RegDate DEFAULT GETDATE()
+    );
+END;
+GO
+
+IF COL_LENGTH(N'dbo.PhotoBBS', N'ID') IS NULL
+BEGIN
+    ALTER TABLE dbo.PhotoBBS ADD ID INT IDENTITY(1,1) NOT NULL;
+END;
+IF NOT EXISTS (SELECT 1 FROM sys.key_constraints WHERE parent_object_id = OBJECT_ID(N'dbo.PhotoBBS') AND type = 'PK')
+BEGIN
+    ALTER TABLE dbo.PhotoBBS ADD CONSTRAINT PK_PhotoBBS PRIMARY KEY CLUSTERED (ID);
+END;
+GO
+
+IF COL_LENGTH(N'dbo.PhotoBBS', N'UserName') IS NULL
+BEGIN
+    ALTER TABLE dbo.PhotoBBS ADD UserName NVARCHAR(50) NULL;
+END;
+GO
+
+IF COL_LENGTH(N'dbo.PhotoBBS', N'UserID') IS NULL
+BEGIN
+    ALTER TABLE dbo.PhotoBBS ADD UserID NVARCHAR(50) NULL;
+END;
+GO
+
+UPDATE dbo.PhotoBBS SET UserName = N'관리자' WHERE UserName IS NULL;
+GO
+
+IF OBJECT_ID(N'dbo.PhotoBBSComment', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.PhotoBBSComment
+    (
+        ID INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_PhotoBBSComment PRIMARY KEY,
+        BbsID INT NOT NULL,
+        UserID NVARCHAR(50) NULL,
+        UserName NVARCHAR(50) NOT NULL,
+        Contents NVARCHAR(1000) NOT NULL,
+        RegDate DATETIME NOT NULL CONSTRAINT DF_PhotoBBSComment_RegDate DEFAULT GETDATE(),
+        CONSTRAINT FK_PhotoBBSComment_PhotoBBS FOREIGN KEY (BbsID) REFERENCES dbo.PhotoBBS(ID) ON DELETE CASCADE
+    );
+END;
+GO
+
+IF COL_LENGTH(N'dbo.PhotoBBSComment', N'UserID') IS NULL
+BEGIN
+    ALTER TABLE dbo.PhotoBBSComment ADD UserID NVARCHAR(50) NULL;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[PhotoBBS_SelectAll]
+    @Page INT = 1,
+    @PageSize INT = 10
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        SET @Page = CASE
+                        WHEN @Page < 1 THEN 1
+                        ELSE @Page
+                    END;
+
+        SET @PageSize = CASE
+                            WHEN @PageSize < 1 OR @PageSize > 100 THEN 10
+                            ELSE @PageSize
+                        END;
+
+        SELECT COUNT(*) AS TotalCount
+        FROM [dbo].[PhotoBBS];
+
+        SELECT
+            PhotoBBS.ID,
+            PhotoBBS.UserID,
+            PhotoBBS.UserName,
+            PhotoBBS.Title,
+            PhotoBBS.Contents,
+            PhotoBBS.[File],
+            PhotoBBS.RegDate,
+            COUNT(PhotoBBSComment.ID) AS CommentCount
+        FROM [dbo].[PhotoBBS]
+        LEFT JOIN [dbo].[PhotoBBSComment]
+            ON PhotoBBSComment.BbsID = PhotoBBS.ID
+        GROUP BY PhotoBBS.ID, PhotoBBS.UserID, PhotoBBS.UserName, PhotoBBS.Title, PhotoBBS.Contents, PhotoBBS.[File], PhotoBBS.RegDate
+        ORDER BY PhotoBBS.ID DESC
+        OFFSET (@Page - 1) * @PageSize ROWS
+        FETCH NEXT @PageSize ROWS ONLY;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+        SET @ErrorInputValue = (
+            SELECT @Page AS Page, @PageSize AS PageSize
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[PhotoBBS_SelectById]
+    @ID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        SELECT
+            PhotoBBS.ID,
+            PhotoBBS.UserID,
+            PhotoBBS.UserName,
+            PhotoBBS.Title,
+            PhotoBBS.Contents,
+            PhotoBBS.[File],
+            PhotoBBS.RegDate,
+            COUNT(PhotoBBSComment.ID) AS CommentCount
+        FROM [dbo].[PhotoBBS]
+        LEFT JOIN [dbo].[PhotoBBSComment]
+            ON PhotoBBSComment.BbsID = PhotoBBS.ID
+        WHERE PhotoBBS.ID = @ID
+        GROUP BY PhotoBBS.ID, PhotoBBS.UserID, PhotoBBS.UserName, PhotoBBS.Title, PhotoBBS.Contents, PhotoBBS.[File], PhotoBBS.RegDate;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+        SET @ErrorInputValue = (
+            SELECT @ID AS ID
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[PhotoBBS_Insert]
+    @UserID NVARCHAR(50),
+    @UserName NVARCHAR(50),
+    @Title NVARCHAR(200),
+    @Contents NVARCHAR(MAX),
+    @File NVARCHAR(500) = NULL,
+    @RegDate DATETIME
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        INSERT INTO [dbo].[PhotoBBS]
+        (
+            UserID,
+            UserName,
+            Title,
+            Contents,
+            [File],
+            RegDate
+        )
+        VALUES
+        (
+            @UserID,
+            @UserName,
+            @Title,
+            @Contents,
+            @File,
+            @RegDate
+        );
+
+        SELECT CONVERT(INT, SCOPE_IDENTITY()) AS ID;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+        SET @ErrorInputValue = (
+            SELECT @UserID AS UserID, @UserName AS UserName, @Title AS Title, @Contents AS Contents, @File AS [File], @RegDate AS RegDate
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[PhotoBBS_Update]
+    @ID INT,
+    @UserID NVARCHAR(50),
+    @UserName NVARCHAR(50),
+    @Title NVARCHAR(200),
+    @Contents NVARCHAR(MAX),
+    @File NVARCHAR(500) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        UPDATE [dbo].[PhotoBBS]
+        SET
+            UserName = @UserName,
+            Title = @Title,
+            Contents = @Contents,
+            [File] = @File
+        WHERE ID = @ID AND UserID = @UserID;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+        SET @ErrorInputValue = (
+            SELECT @ID AS ID, @UserID AS UserID, @UserName AS UserName, @Title AS Title, @Contents AS Contents, @File AS [File]
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[PhotoBBS_Delete]
+    @ID INT,
+    @UserID NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        DELETE FROM [dbo].[PhotoBBS]
+        WHERE ID = @ID AND UserID = @UserID;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+        SET @ErrorInputValue = (
+            SELECT @ID AS ID, @UserID AS UserID
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[PhotoBBSComment_SelectByBbsId]
+    @BbsID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        SELECT
+            ID,
+            BbsID,
+            UserID,
+            UserName,
+            Contents,
+            RegDate
+        FROM [dbo].[PhotoBBSComment]
+        WHERE BbsID = @BbsID
+        ORDER BY ID ASC;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+        SET @ErrorInputValue = (
+            SELECT @BbsID AS BbsID
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[PhotoBBSComment_Insert]
+    @BbsID INT,
+    @UserID NVARCHAR(50),
+    @UserName NVARCHAR(50),
+    @Contents NVARCHAR(1000)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        INSERT INTO [dbo].[PhotoBBSComment]
+        (
+            BbsID,
+            UserID,
+            UserName,
+            Contents,
+            RegDate
+        )
+        VALUES
+        (
+            @BbsID,
+            @UserID,
+            @UserName,
+            @Contents,
+            GETDATE()
+        );
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+        SET @ErrorInputValue = (
+            SELECT @BbsID AS BbsID, @UserID AS UserID, @UserName AS UserName, @Contents AS Contents
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE [ExecWeb].[PhotoBBSComment_Delete]
+    @ID INT,
+    @UserID NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        DELETE FROM [dbo].[PhotoBBSComment]
+        WHERE ID = @ID
+          AND (UserID = @UserID OR @UserID IS NULL);
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+        SET @ErrorInputValue = (
+            SELECT @ID AS ID, @UserID AS UserID
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
 IF COL_LENGTH(N'dbo.BBSComment', N'UserID') IS NULL
 BEGIN
     ALTER TABLE dbo.BBSComment ADD UserID NVARCHAR(50) NULL;

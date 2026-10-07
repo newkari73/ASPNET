@@ -28,6 +28,25 @@ public class BbsPost
     public string? File { get; set; }
 
     public int CommentCount { get; set; }
+
+    public IReadOnlyList<string> ImageFiles =>
+        string.IsNullOrWhiteSpace(File)
+            ? Array.Empty<string>()
+            : File.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    public bool HasAttachment => ImageFiles.Count > 0;
+
+    public bool IsImageAttachment => ImageFiles.Any(IsImageFile);
+
+    public string PrimaryImagePath => ImageFiles.FirstOrDefault() is string fileName ? $"/uploads/{fileName}" : string.Empty;
+
+    public string ImagePath => PrimaryImagePath;
+
+    public static bool IsImageFile(string fileName)
+    {
+        var extension = Path.GetExtension(fileName);
+        return extension is ".jpg" or ".jpeg" or ".png" or ".gif" or ".bmp" or ".webp" or ".svg" or ".avif";
+    }
 }
 
 public class BbsPageViewModel

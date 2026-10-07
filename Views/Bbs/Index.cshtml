@@ -31,15 +31,23 @@
             foreach (var post in Model.Posts)
             {
                 <tr>
-                    <td>
-                        <a class="post-title" asp-action="Details" asp-route-id="@post.ID">@post.Title</a>
-                        @if (post.CommentCount > 0)
+                    <td class="title-cell">
+                        @if (post.IsImageAttachment)
                         {
-                            <span class="comment-count" aria-label="댓글 @(post.CommentCount)개">[@post.CommentCount]</span>
+                            <a class="board-thumb" asp-action="Details" asp-route-id="@post.ID" aria-label="@post.Title 이미지 보기">
+                                <img src="@Url.Content(post.ImagePath)" alt="@post.Title" />
+                            </a>
                         }
+                        <div class="post-title-wrap">
+                            <a class="post-title" asp-action="Details" asp-route-id="@post.ID">@post.Title</a>
+                            @if (post.CommentCount > 0)
+                            {
+                                <span class="comment-count" aria-label="댓글 @(post.CommentCount)개">[@post.CommentCount]</span>
+                            }
+                        </div>
                     </td>
                     <td class="date-column">@post.RegDate.ToString("yyyy.MM.dd")</td>
-                    <td class="file-column">@(string.IsNullOrWhiteSpace(post.File) ? "-" : "첨부")</td>
+                    <td class="file-column">@(string.IsNullOrWhiteSpace(post.File) ? "-" : (post.IsImageAttachment ? "이미지" : "첨부"))</td>
                 </tr>
             }
         }

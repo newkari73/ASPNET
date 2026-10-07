@@ -18,7 +18,7 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Bbs" asp-action="Index">ASPNET BOARD</a>
+                <a class="navbar-brand" asp-area="" asp-controller="PhotoBoard" asp-action="Index">PHOTO BOARD</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -30,7 +30,10 @@
                             @if (userPerms.CanRead("BBS"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Bbs" asp-action="Index">게시판</a>
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="PhotoBoard" asp-action="Index">사진게시판</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Bbs" asp-action="Index">일반게시판</a>
                                 </li>
                             }
                             @if (userPerms.CanRead("SCHEDULE"))
@@ -55,7 +58,10 @@
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Bbs" asp-action="Index">게시판</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="PhotoBoard" asp-action="Index">사진게시판</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Bbs" asp-action="Index">일반게시판</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Schedule" asp-action="Index">일정관리</a>

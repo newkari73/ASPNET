@@ -2,6 +2,56 @@
 // for details on configuring this project to bundle and minify static web assets.
 
 (() => {
+	document.querySelectorAll('[data-image-preview]').forEach((input) => {
+		const previewId = input.dataset.imagePreview;
+		const preview = previewId ? document.getElementById(previewId) : null;
+		if (!preview) {
+			return;
+		}
+
+		input.addEventListener('change', () => {
+			const file = input.files && input.files[0];
+			if (!file || !file.type.startsWith('image/')) {
+				preview.removeAttribute('src');
+				preview.hidden = true;
+				return;
+			}
+
+			const previewUrl = URL.createObjectURL(file);
+			preview.src = previewUrl;
+			preview.hidden = false;
+		});
+	});
+
+	document.querySelectorAll('[data-photo-input]').forEach((input) => {
+		const previewRoot = document.getElementById(input.dataset.photoInput);
+		if (!previewRoot) {
+			return;
+		}
+
+		input.addEventListener('change', () => {
+			const files = Array.from(input.files || []);
+			previewRoot.innerHTML = '';
+
+			if (files.length === 0) {
+				return;
+			}
+
+			files.forEach((file) => {
+				if (!file.type.startsWith('image/')) {
+					return;
+				}
+
+				const img = document.createElement('img');
+				img.src = URL.createObjectURL(file);
+				img.alt = file.name;
+				previewRoot.appendChild(img);
+			});
+		});
+	});
+})();
+
+(() => {
 	const modal = document.querySelector('[data-file-modal]');
 	const openButton = document.querySelector('[data-file-modal-open]');
 

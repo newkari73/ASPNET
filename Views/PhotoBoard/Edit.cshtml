@@ -1,36 +1,47 @@
 @model BbsPost
 @{
-    ViewData["Title"] = "게시글 수정";
+    ViewData["Title"] = "사진 수정";
 }
 
 <div class="form-heading">
-    <p class="eyebrow">EDIT POST</p>
-    <h1>게시글 수정</h1>
+    <p class="eyebrow">EDIT PHOTO</p>
+    <h1>사진 수정</h1>
 </div>
+
 <form asp-action="Edit" asp-route-id="@Model.ID" method="post" enctype="multipart/form-data" class="post-form">
     @Html.AntiForgeryToken()
     <input asp-for="ID" type="hidden" />
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <p class="signed-user">작성자: @Context.Session.GetString("UserName")</p>
+
     <label asp-for="Title"></label>
     <input asp-for="Title" class="form-control" autofocus />
     <span asp-validation-for="Title" class="text-danger"></span>
+
     <label asp-for="Contents"></label>
-    <textarea asp-for="Contents" class="form-control content-input" rows="12"></textarea>
+    <textarea asp-for="Contents" class="form-control content-input" rows="6"></textarea>
     <span asp-validation-for="Contents" class="text-danger"></span>
-    <label for="upload">새 이미지 첨부</label>
-    <input id="upload" name="upload" type="file" class="form-control" accept="image/*" data-image-preview="upload-preview" />
-    @if (Model.IsImageAttachment)
+
+    <label for="uploads">새 사진 추가</label>
+    <input id="uploads" name="uploads" type="file" class="form-control" accept="image/*" multiple data-photo-input="upload-preview" />
+
+    @if (Model.HasAttachment)
     {
-        <div class="current-image-preview">
-            <img src="@Url.Content(Model.ImagePath)" alt="현재 첨부 이미지" />
+        <div class="photo-preview-grid">
+            @foreach (var imageFile in Model.ImageFiles)
+            {
+                <img src="@Url.Content($"/uploads/{imageFile}")" alt="현재 사진" />
+            }
         </div>
-        <p class="current-file">현재 파일: @Model.File</p>
+        <p class="current-file">현재 등록된 사진: @Model.ImageFiles.Count 장</p>
     }
-    <img id="upload-preview" class="image-preview" alt="새 업로드 이미지 미리보기" hidden />
+
+    <div id="upload-preview" class="photo-preview-grid"></div>
+
     <div class="form-actions">
         <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.ID">취소</a>
         <button class="btn btn-primary" type="submit">저장하기</button>
     </div>
 </form>
+
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }
