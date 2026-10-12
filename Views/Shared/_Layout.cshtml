@@ -27,11 +27,14 @@
                     <ul class="navbar-nav flex-grow-1">
                         @if (userPerms is not null)
                         {
-                            @if (userPerms.CanRead("BBS"))
+                            @if (userPerms.CanRead("PHOTO_BBS"))
                             {
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-area="" asp-controller="PhotoBoard" asp-action="Index">사진게시판</a>
                                 </li>
+                            }
+                            @if (userPerms.CanRead("BBS"))
+                            {
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-area="" asp-controller="Bbs" asp-action="Index">일반게시판</a>
                                 </li>

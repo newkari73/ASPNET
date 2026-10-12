@@ -258,8 +258,10 @@ h1 {
   background: #f6f8f7;
   border: 1px solid var(--line);
   display: block;
-  height: 18rem;
-  object-fit: cover;
+  height: auto;
+  max-height: 80vh;
+  max-width: 100%;
+  object-fit: contain;
   width: 100%;
 }
 .photo-preview-grid {

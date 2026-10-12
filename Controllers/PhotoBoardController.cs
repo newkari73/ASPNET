@@ -25,7 +25,7 @@ public class PhotoBoardController(IConfiguration configuration, IWebHostEnvironm
 
     public async Task<IActionResult> Index(int page = 1)
     {
-        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Read))
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "PHOTO_BBS", PermissionType.Read))
         {
             TempData["ErrorMessage"] = "사진게시판 조회 권한이 없습니다.";
             return RedirectToAction("Index", "Home");
@@ -66,7 +66,7 @@ public class PhotoBoardController(IConfiguration configuration, IWebHostEnvironm
 
     public async Task<IActionResult> Details(int id)
     {
-        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Read))
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "PHOTO_BBS", PermissionType.Read))
         {
             TempData["ErrorMessage"] = "사진게시판 조회 권한이 없습니다.";
             return RedirectToAction("Index", "Home");
@@ -87,7 +87,7 @@ public class PhotoBoardController(IConfiguration configuration, IWebHostEnvironm
 
     public async Task<IActionResult> Create()
     {
-        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Update))
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "PHOTO_BBS", PermissionType.Update))
         {
             TempData["ErrorMessage"] = "사진게시판 글 작성 권한이 없습니다.";
             return RedirectToAction(nameof(Index));
@@ -100,7 +100,7 @@ public class PhotoBoardController(IConfiguration configuration, IWebHostEnvironm
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(BbsPost post, IFormFile[]? uploads)
     {
-        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Update))
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "PHOTO_BBS", PermissionType.Update))
         {
             TempData["ErrorMessage"] = "사진게시판 글 작성 권한이 없습니다.";
             return RedirectToAction(nameof(Index));
@@ -135,7 +135,7 @@ public class PhotoBoardController(IConfiguration configuration, IWebHostEnvironm
 
     public async Task<IActionResult> Edit(int id)
     {
-        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Update))
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "PHOTO_BBS", PermissionType.Update))
         {
             TempData["ErrorMessage"] = "사진게시판 글 수정 권한이 없습니다.";
             return RedirectToAction(nameof(Index));
@@ -154,7 +154,7 @@ public class PhotoBoardController(IConfiguration configuration, IWebHostEnvironm
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, BbsPost post, IFormFile[]? uploads)
     {
-        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Update))
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "PHOTO_BBS", PermissionType.Update))
         {
             TempData["ErrorMessage"] = "사진게시판 글 수정 권한이 없습니다.";
             return RedirectToAction(nameof(Index));
@@ -208,7 +208,7 @@ public class PhotoBoardController(IConfiguration configuration, IWebHostEnvironm
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Delete))
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "PHOTO_BBS", PermissionType.Delete))
         {
             TempData["ErrorMessage"] = "사진게시판 글 삭제 권한이 없습니다.";
             return RedirectToAction(nameof(Index));
@@ -233,7 +233,7 @@ public class PhotoBoardController(IConfiguration configuration, IWebHostEnvironm
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddComment(int bbsId, BbsComment comment)
     {
-        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Update))
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "PHOTO_BBS", PermissionType.Update))
         {
             TempData["ErrorMessage"] = "댓글 작성 권한이 없습니다.";
             return RedirectToAction(nameof(Details), new { id = bbsId });
@@ -268,7 +268,7 @@ public class PhotoBoardController(IConfiguration configuration, IWebHostEnvironm
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteComment(int id, int bbsId)
     {
-        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Delete))
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "PHOTO_BBS", PermissionType.Delete))
         {
             TempData["ErrorMessage"] = "댓글 삭제 권한이 없습니다.";
             return RedirectToAction(nameof(Details), new { id = bbsId });

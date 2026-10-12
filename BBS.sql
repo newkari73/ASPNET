@@ -1120,6 +1120,11 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[Menu] WHERE MenuCode = N'BBS')
     VALUES (N'BBS', N'게시판', N'Bbs', N'Index', 1, 1);
 GO
 
+IF NOT EXISTS (SELECT 1 FROM [dbo].[Menu] WHERE MenuCode = N'PHOTO_BBS')
+    INSERT INTO [dbo].[Menu] (MenuCode, MenuName, ControllerName, ActionName, SortOrder, IsActive)
+    VALUES (N'PHOTO_BBS', N'사진게시판', N'PhotoBoard', N'Index', 4, 1);
+GO
+
 IF NOT EXISTS (SELECT 1 FROM [dbo].[Menu] WHERE MenuCode = N'SCHEDULE')
     INSERT INTO [dbo].[Menu] (MenuCode, MenuName, ControllerName, ActionName, SortOrder, IsActive)
     VALUES (N'SCHEDULE', N'일정관리', N'Schedule', N'Index', 2, 1);
