@@ -107,80 +107,124 @@
 })();
 
 (() => {
-	const modal = document.querySelector('[data-schedule-modal]');
-	const openButtons = document.querySelectorAll('[data-schedule-open-date]');
-	const form = document.querySelector('[data-schedule-form]');
+	const refreshScheduleLayout = async (selectedDate) => {
+		const url = new URL(window.location.href);
+		url.searchParams.set('month', selectedDate);
+		url.searchParams.set('selectedDate', selectedDate);
+		const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+		if (!response.ok) {
+			throw new Error('일정 화면을 새로 불러오지 못했습니다.');
+		}
 
-	if (!modal || openButtons.length === 0 || !form) {
-		return;
-	}
+		const html = await response.text();
+		const nextLayout = new DOMParser().parseFromString(html, 'text/html').querySelector('.schedule-layout');
+		const currentLayout = document.querySelector('.schedule-layout');
+		if (!nextLayout || !currentLayout) {
+			throw new Error('일정 화면을 갱신하지 못했습니다.');
+		}
 
-	const error = modal.querySelector('[data-schedule-error]');
-	const closeModal = () => {
-		modal.hidden = true;
-		document.body.classList.remove('modal-open');
+		currentLayout.replaceWith(nextLayout);
+		window.history.replaceState({}, '', `${url.pathname}${url.search}`);
 	};
 
-	const openModal = (date) => {
-		error.textContent = '';
-		modal.querySelector('[name="StartDate"]').value = date;
-		modal.querySelector('[name="EndDate"]').value = date;
-		modal.hidden = false;
-		document.body.classList.add('modal-open');
-		modal.querySelector('[name="Title"]').focus();
-	};
-
-	openButtons.forEach((button) => {
-		button.addEventListener('click', (event) => {
-			event.preventDefault();
-			event.stopPropagation();
-			openModal(button.dataset.scheduleOpenDate);
-		});
-	});
-
-	document.querySelectorAll('[data-schedule-delete-id]').forEach((button) => {
-		button.addEventListener('click', async (event) => {
-			event.preventDefault();
-			event.stopPropagation();
-			if (!confirm('이 일정을 삭제할까요?')) {
-				return;
-			}
-
-			const data = new FormData();
-			data.append('id', button.dataset.scheduleDeleteId);
-			data.append('selectedDate', button.dataset.scheduleDeleteDate);
-			data.append('__RequestVerificationToken', form.querySelector('[name="__RequestVerificationToken"]').value);
-			button.disabled = true;
-			try {
-				const response = await fetch('/Schedule/Delete', {
-					method: 'POST',
-					body: data,
-					headers: { 'X-Requested-With': 'XMLHttpRequest' }
-				});
-				const result = await response.json();
-				if (!response.ok || !result.success) {
-					throw new Error(result.message || '일정 삭제에 실패했습니다.');
-				}
-				window.location.reload();
-			} catch (requestError) {
-				button.disabled = false;
-				alert(requestError.message);
-			}
-		});
-	});
-
-	modal.querySelectorAll('[data-schedule-close]').forEach((button) => {
-		button.addEventListener('click', closeModal);
-	});
-
-	form.addEventListener('submit', async (event) => {
-		event.preventDefault();
-		error.textContent = '';
+	const openCreateForm = (form, date) => {
+		const error = form.querySelector('[data-schedule-error]');
 		const submitButton = form.querySelector('button[type="submit"]');
+		error.textContent = '';
+		form.dataset.mode = 'create';
+		form.querySelector('[name="id"]').value = '0';
+		form.querySelector('[name="StartDate"]').value = date;
+		form.querySelector('[name="EndDate"]').value = date;
+		form.querySelector('[name="Title"]').value = '';
+		form.querySelector('[name="Contents"]').value = '';
+		form.querySelector('[data-schedule-form-title]').textContent = '일정 등록';
+		submitButton.textContent = '등록하기';
+		submitButton.disabled = date < new Date().toISOString().slice(0, 10);
+		form.querySelector('[data-schedule-past-notice]')?.toggleAttribute('hidden', !submitButton.disabled);
+		form.querySelector('[name="Title"]').focus();
+	};
+
+	document.addEventListener('click', async (event) => {
+		const button = event.target.closest('button');
+		if (!button) {
+			return;
+		}
+
+		const form = document.querySelector('[data-schedule-form]');
+		if (button.matches('[data-schedule-open-date]') && form) {
+			event.preventDefault();
+			event.stopPropagation();
+			openCreateForm(form, button.dataset.scheduleOpenDate);
+			return;
+		}
+
+		if (button.matches('[data-schedule-edit-id]') && form) {
+			const error = form.querySelector('[data-schedule-error]');
+			const submitButton = form.querySelector('button[type="submit"]');
+			error.textContent = '';
+			form.dataset.mode = 'edit';
+			form.querySelector('[name="id"]').value = button.dataset.scheduleEditId;
+			form.querySelector('[name="StartDate"]').value = button.dataset.scheduleEditStartDate;
+			form.querySelector('[name="StartTime"]').value = button.dataset.scheduleEditStartTime;
+			form.querySelector('[name="EndDate"]').value = button.dataset.scheduleEditEndDate;
+			form.querySelector('[name="EndTime"]').value = button.dataset.scheduleEditEndTime;
+			form.querySelector('[name="Title"]').value = button.dataset.scheduleEditTitle;
+			form.querySelector('[name="Contents"]').value = button.dataset.scheduleEditContents;
+			form.querySelector('[data-schedule-form-title]').textContent = '일정 수정';
+			submitButton.textContent = '수정하기';
+			submitButton.disabled = false;
+			form.querySelector('[data-schedule-past-notice]')?.setAttribute('hidden', '');
+			form.querySelector('[name="Title"]').focus();
+			return;
+		}
+
+		if (!button.matches('[data-schedule-delete-id]') || !form) {
+			return;
+		}
+
+		event.preventDefault();
+		event.stopPropagation();
+		if (!confirm('이 일정을 삭제할까요?')) {
+			return;
+		}
+
+		const data = new FormData();
+		data.append('id', button.dataset.scheduleDeleteId);
+		data.append('selectedDate', button.dataset.scheduleDeleteDate);
+		data.append('__RequestVerificationToken', form.querySelector('[name="__RequestVerificationToken"]').value);
+		button.disabled = true;
+		try {
+			const response = await fetch('/Schedule/Delete', {
+				method: 'POST',
+				body: data,
+				headers: { 'X-Requested-With': 'XMLHttpRequest' }
+			});
+			const result = await response.json();
+			if (!response.ok || !result.success) {
+				throw new Error(result.message || '일정 삭제에 실패했습니다.');
+			}
+			await refreshScheduleLayout(button.dataset.scheduleDeleteDate);
+		} catch (requestError) {
+			button.disabled = false;
+			alert(requestError.message);
+		}
+	});
+
+	document.addEventListener('submit', async (event) => {
+		const form = event.target;
+		if (!form.matches('[data-schedule-form]')) {
+			return;
+		}
+
+		event.preventDefault();
+		const error = form.querySelector('[data-schedule-error]');
+		const submitButton = form.querySelector('button[type="submit"]');
+		error.textContent = '';
 		submitButton.disabled = true;
 
 		try {
-			const response = await fetch(form.action, {
+			const action = form.dataset.mode === 'edit' ? form.dataset.updateUrl : form.action;
+			const response = await fetch(action, {
 				method: 'POST',
 				body: new FormData(form),
 				headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -193,18 +237,19 @@
 				throw new Error('서버 응답을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.');
 			}
 			if (!response.ok || !result.success) {
-				throw new Error(result.message || '일정 등록에 실패했습니다.');
+				throw new Error(result.message || '일정 저장에 실패했습니다.');
 			}
-			window.location.href = `/Schedule/Index?selectedDate=${encodeURIComponent(result.selectedDate)}`;
+			try {
+				await refreshScheduleLayout(result.selectedDate);
+			} catch {
+				const url = new URL(window.location.href);
+				url.searchParams.set('month', result.selectedDate);
+				url.searchParams.set('selectedDate', result.selectedDate);
+				window.location.assign(url);
+			}
 		} catch (requestError) {
 			error.textContent = requestError.message;
 			submitButton.disabled = false;
-		}
-	});
-
-	document.addEventListener('keydown', (event) => {
-		if (event.key === 'Escape' && !modal.hidden) {
-			closeModal();
 		}
 	});
 })();

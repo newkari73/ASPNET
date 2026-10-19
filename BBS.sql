@@ -312,6 +312,49 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE [ExecWeb].[Schedule_Update]
+    @ID INT,
+    @UserID NVARCHAR(50),
+    @StartDateTime DATETIME2,
+    @EndDateTime DATETIME2,
+    @Title NVARCHAR(200),
+    @Contents NVARCHAR(2000) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        UPDATE [dbo].[Schedule]
+        SET ScheduleDate = CONVERT(DATE, @StartDateTime),
+            StartDateTime = @StartDateTime,
+            EndDateTime = @EndDateTime,
+            Title = @Title,
+            Contents = @Contents
+        WHERE ID = @ID
+          AND UserID = @UserID;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorInputValue NVARCHAR(MAX);
+
+        SET @ErrorInputValue =
+        (
+            SELECT
+                @ID AS ID,
+                @UserID AS UserID,
+                @StartDateTime AS StartDateTime,
+                @EndDateTime AS EndDateTime,
+                @Title AS Title,
+                @Contents AS Contents
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        );
+
+        EXEC [ExecWeb].[c_RaiseError] @ErrorInputValue;
+
+        RETURN 0;
+    END CATCH;
+END;
+GO
+
 CREATE OR ALTER PROCEDURE [ExecWeb].[Schedule_Delete]
     @ID INT,
     @UserID NVARCHAR(50)

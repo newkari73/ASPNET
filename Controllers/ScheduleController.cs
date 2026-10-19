@@ -40,7 +40,7 @@ public class ScheduleController(IConfiguration configuration, IPermissionService
         {
             Month = currentMonth,
             SelectedDate = selected,
-            Schedules = schedules.Where(item => item.StartDateTime.Date == selected).ToList(),
+            Schedules = schedules.Where(item => item.StartDateTime.Date <= selected && item.EndDateTime.Date >= selected).ToList(),
             MonthSchedules = schedules,
             DatesWithSchedules = schedules
                 .SelectMany(item => Enumerable.Range(0, (item.EndDateTime.Date - item.StartDateTime.Date).Days + 1)
@@ -79,6 +79,40 @@ public class ScheduleController(IConfiguration configuration, IPermissionService
         catch (Exception)
         {
             return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = "일정 등록 중 오류가 발생했습니다." });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Update(int id, ScheduleFormModel model)
+    {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "SCHEDULE", PermissionType.Update))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "일정 수정 권한이 없습니다." });
+        }
+
+        if (id <= 0 || !ModelState.IsValid || model.EndDateTime < model.StartDateTime)
+        {
+            return BadRequest(new { success = false, message = "완료 일시는 시작 일시보다 빠를 수 없습니다." });
+        }
+
+        try
+        {
+            await using var connection = new SqlConnection(connectionString);
+            await connection.OpenAsync();
+            await using var command = CreateCommand(connection, "ExecWeb.Schedule_Update");
+            command.Parameters.Add("@ID", SqlDbType.Int).Value = id;
+            command.Parameters.Add("@UserID", SqlDbType.NVarChar, 50).Value = CurrentUserId;
+            command.Parameters.Add("@StartDateTime", SqlDbType.DateTime2).Value = model.StartDateTime;
+            command.Parameters.Add("@EndDateTime", SqlDbType.DateTime2).Value = model.EndDateTime;
+            command.Parameters.Add("@Title", SqlDbType.NVarChar, 200).Value = model.Title;
+            command.Parameters.Add("@Contents", SqlDbType.NVarChar, 2000).Value = (object?)model.Contents ?? DBNull.Value;
+            await command.ExecuteNonQueryAsync();
+            return Json(new { success = true, selectedDate = model.StartDateTime.ToString("yyyy-MM-dd") });
+        }
+        catch (Exception)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = "일정 수정 중 오류가 발생했습니다." });
         }
     }
 

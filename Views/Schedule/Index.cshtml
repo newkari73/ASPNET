@@ -6,6 +6,7 @@
     var daysInMonth = DateTime.DaysInMonth(Model.Month.Year, Model.Month.Month);
     var previousMonth = Model.Month.AddMonths(-1);
     var nextMonth = Model.Month.AddMonths(1);
+    var canCreateSchedule = Model.SelectedDate.Date >= DateTime.Today;
     var holidays = new Dictionary<DateTime, string>
     {
         [new DateTime(Model.Month.Year, 1, 1)] = "신정",
@@ -69,19 +70,7 @@
                 var daySchedules = Model.MonthSchedules
                     .Where(item => item.StartDateTime.Date <= date && item.EndDateTime.Date >= date)
                     .ToList();
-                @if (isPast)
-                {
-                    <div class="calendar-day is-past @(hasSchedule ? "has-schedule" : "") @(isHoliday ? "is-holiday" : "")" title="@(isHoliday ? holidayName : "지난 날짜")" aria-disabled="true">
-                        <span>@day</span>
-                        @foreach (var item in daySchedules)
-                        {
-                            <span class="schedule-range-label">@item.Title</span>
-                        }
-                    </div>
-                }
-                else
-                {
-                <a class="calendar-day @(isSelected ? "is-selected" : "") @(hasSchedule ? "has-schedule" : "") @(isHoliday ? "is-holiday" : "")" title="@(isHoliday ? holidayName : null)" asp-route-month="@Model.Month.ToString("yyyy-MM-dd")" asp-route-selectedDate="@date.ToString("yyyy-MM-dd")">
+                <a class="calendar-day @(isSelected ? "is-selected" : "") @(isPast ? "is-past" : "") @(hasSchedule ? "has-schedule" : "") @(isHoliday ? "is-holiday" : "")" title="@(isHoliday ? holidayName : null)" asp-route-month="@Model.Month.ToString("yyyy-MM-dd")" asp-route-selectedDate="@date.ToString("yyyy-MM-dd")">
                     <span>@day</span>
                     @if (hasSchedule) { <i aria-label="일정 있음"></i> }
                     @foreach (var item in daySchedules)
@@ -99,30 +88,47 @@
                                 </span>
                                 @if (!string.IsNullOrWhiteSpace(item.Contents)) { <small>@item.Contents</small> }
                             }
-                            <button type="button" class="schedule-hover-add" data-schedule-open-date="@date.ToString("yyyy-MM-dd")">+ 일정 등록</button>
+                            @if (!isPast) { <button type="button" class="schedule-hover-add" data-schedule-open-date="@date.ToString("yyyy-MM-dd")">+ 일정 등록</button> }
                         </span>
                     }
-                    else
+                    else if (!isPast)
                     {
                         <button type="button" class="schedule-day-add" data-schedule-open-date="@date.ToString("yyyy-MM-dd")" aria-label="@date.ToString("yyyy년 M월 d일") 일정 등록">+</button>
                     }
                 </a>
-                }
             }
         </div>
     </section>
-
-</div>
-
-<div class="schedule-modal" data-schedule-modal hidden>
-    <div class="schedule-modal-backdrop" data-schedule-close></div>
-    <section class="schedule-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
-        <header class="schedule-modal-header">
-            <h2 id="schedule-modal-title">일정 등록</h2>
-            <button type="button" class="schedule-modal-close" data-schedule-close aria-label="일정 등록 닫기">닫기</button>
-        </header>
-        <form asp-action="Create" method="post" class="schedule-form" data-schedule-form>
+    <aside class="schedule-detail" aria-labelledby="schedule-detail-title">
+        <p class="eyebrow">SELECTED DATE</p>
+        <h2 id="schedule-detail-title">@Model.SelectedDate.ToString("yyyy년 M월 d일")</h2>
+        @if (Model.Schedules.Count == 0)
+        {
+            <p class="schedule-empty">등록된 일정이 없습니다.</p>
+        }
+        else
+        {
+            <div class="schedule-list">
+                @foreach (var item in Model.Schedules)
+                {
+                    <article class="schedule-item">
+                        <div>
+                            <span class="schedule-time">@item.StartDateTime.ToString("yyyy-MM-dd HH:mm") - @item.EndDateTime.ToString("yyyy-MM-dd HH:mm")</span>
+                            <h3>@item.Title</h3>
+                            @if (!string.IsNullOrWhiteSpace(item.Contents)) { <p>@item.Contents</p> }
+                        </div>
+                        <div class="schedule-item-actions">
+                            <button type="button" class="schedule-edit" data-schedule-edit-id="@item.ID" data-schedule-edit-start-date="@item.StartDateTime.ToString("yyyy-MM-dd")" data-schedule-edit-start-time="@item.StartDateTime.ToString("HH:mm")" data-schedule-edit-end-date="@item.EndDateTime.ToString("yyyy-MM-dd")" data-schedule-edit-end-time="@item.EndDateTime.ToString("HH:mm")" data-schedule-edit-title="@item.Title" data-schedule-edit-contents="@item.Contents">수정</button>
+                            <button type="button" class="schedule-delete" data-schedule-delete-id="@item.ID" data-schedule-delete-date="@Model.SelectedDate.ToString("yyyy-MM-dd")">삭제</button>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+        <form asp-action="Create" method="post" class="schedule-form" data-schedule-form data-update-url="@Url.Action("Update", "Schedule")" data-mode="create">
             @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="0" />
+            <h3 data-schedule-form-title>일정 등록</h3>
             <label for="schedule-start-date">시작 일시</label>
             <div class="schedule-datetime-row">
                 <input id="schedule-start-date" name="StartDate" type="date" class="form-control" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" required />
@@ -135,9 +141,18 @@
             </div>
             <label for="schedule-title">일정 제목</label>
             <input id="schedule-title" name="Title" class="form-control" placeholder="일정 제목" maxlength="200" required />
-            <textarea name="Contents" class="form-control" placeholder="내용 (선택)" maxlength="2000" rows="4"></textarea>
+            <label for="schedule-contents">내용</label>
+            <textarea id="schedule-contents" name="Contents" class="form-control" placeholder="내용 (선택)" maxlength="2000" rows="4"></textarea>
             <p class="schedule-form-error" data-schedule-error role="alert"></p>
-            <button class="btn btn-primary" type="submit">등록하기</button>
+            @if (canCreateSchedule)
+            {
+                <button class="btn btn-primary" type="submit">등록하기</button>
+            }
+            else
+            {
+                <p class="schedule-past-notice" data-schedule-past-notice>지난 날짜에는 새 일정을 등록할 수 없습니다. 기존 일정은 수정할 수 있습니다.</p>
+                <button class="btn btn-primary" type="submit" disabled>등록하기</button>
+            }
         </form>
-    </section>
+    </aside>
 </div>
