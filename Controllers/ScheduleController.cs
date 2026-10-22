@@ -32,7 +32,7 @@ public class ScheduleController(IConfiguration configuration, IPermissionService
         }
 
         var currentMonth = new DateTime((month ?? DateTime.Today).Year, (month ?? DateTime.Today).Month, 1);
-        var selected = (selectedDate ?? currentMonth).Date;
+        var selected = (selectedDate ?? DateTime.Today).Date;
         var userId = CurrentUserId;
         var schedules = await FindSchedulesAsync(userId, currentMonth);
 
