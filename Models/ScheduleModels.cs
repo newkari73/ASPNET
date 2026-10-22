@@ -32,7 +32,7 @@ public class ScheduleFormModel
     public string Title { get; set; } = string.Empty;
 
     [StringLength(2000, ErrorMessage = "내용은 2,000자 이내로 입력해 주세요.")]
-    public string Contents { get; set; } = string.Empty;
+    public string? Contents { get; set; }
 
     public DateTime StartDateTime => StartDate.Date.Add(StartTime);
     public DateTime EndDateTime => EndDate.Date.Add(EndTime);
