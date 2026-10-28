@@ -9,7 +9,7 @@
         <h1>@Model.Post.Title</h1>
         <time datetime="@Model.Post.RegDate.ToString("s")">No. @Model.Post.ID · @Model.Post.UserName · @Model.Post.RegDate.ToString("yyyy.MM.dd HH:mm")</time>
     </div>
-    <div class="post-content">@Model.Post.Contents</div>
+    <div class="post-content">@Html.Raw(Model.Post.Contents)</div>
     @if (Model.Post.HasAttachment)
     {
         if (Model.Post.IsImageAttachment)

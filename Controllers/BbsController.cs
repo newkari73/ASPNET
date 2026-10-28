@@ -7,7 +7,11 @@ using System.Data;
 
 namespace AspNetBbs.Controllers;
 
-public class BbsController(IConfiguration configuration, IWebHostEnvironment environment, IPermissionService permissionService) : Controller
+public class BbsController(
+    IConfiguration configuration,
+    IWebHostEnvironment environment,
+    IPermissionService permissionService,
+    PostContentSanitizer contentSanitizer) : Controller
 {
     private readonly string connectionString = configuration.GetConnectionString("DefaultConnection")
         ?? throw new InvalidOperationException("DefaultConnection이 설정되지 않았습니다.");
@@ -77,6 +81,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
             return NotFound();
         }
 
+        post.Contents = contentSanitizer.Sanitize(post.Contents);
         return View(new BbsDetailViewModel
         {
             Post = post,
@@ -107,7 +112,9 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
 
         post.UserName = CurrentUserName;
         post.UserID = CurrentUserId;
+        post.Contents = contentSanitizer.Sanitize(post.Contents);
         ModelState.Remove(nameof(BbsPost.UserName));
+        ModelState.Remove(nameof(BbsPost.Contents));
         if (!ModelState.IsValid)
         {
             return View(post);
@@ -133,6 +140,7 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
             return NotFound();
         }
 
+        post.Contents = contentSanitizer.Sanitize(post.Contents);
         return post.UserID == CurrentUserId ? View(post) : Forbid();
     }
 
@@ -159,7 +167,9 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
 
         post.UserName = CurrentUserName;
         post.UserID = CurrentUserId;
+        post.Contents = contentSanitizer.Sanitize(post.Contents);
         ModelState.Remove(nameof(BbsPost.UserName));
+        ModelState.Remove(nameof(BbsPost.Contents));
         if (!ModelState.IsValid)
         {
             return View(post);
@@ -169,6 +179,38 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
         post.File = await SaveFileAsync(upload) ?? post.File;
         await ExecuteAsync("ExecWeb.BBS_Update", post, includeId: true);
         return RedirectToAction(nameof(Details), new { id = post.ID });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(8 * 1024 * 1024)]
+    public async Task<IActionResult> UploadEditorImage(IFormFile? image)
+    {
+        if (!await permissionService.HasPermissionAsync(CurrentUserId, "BBS", PermissionType.Update))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "게시글 작성 권한이 없습니다." });
+        }
+
+        if (image is null || image.Length == 0 || image.Length > 8 * 1024 * 1024)
+        {
+            return BadRequest(new { message = "이미지는 8MB 이하의 파일만 붙여넣을 수 있습니다." });
+        }
+
+        var extension = await GetClipboardImageExtensionAsync(image);
+        if (extension is null)
+        {
+            return BadRequest(new { message = "PNG, JPEG, GIF, WEBP 이미지만 붙여넣을 수 있습니다." });
+        }
+
+        var uploads = Path.Combine(environment.WebRootPath, "uploads");
+        Directory.CreateDirectory(uploads);
+        var storedName = $"{Guid.NewGuid():N}.{extension}";
+        await using (var stream = System.IO.File.Create(Path.Combine(uploads, storedName)))
+        {
+            await image.CopyToAsync(stream);
+        }
+
+        return Json(new { url = $"/uploads/{storedName}" });
     }
 
     [HttpPost]
@@ -288,6 +330,37 @@ public class BbsController(IConfiguration configuration, IWebHostEnvironment env
         await using var stream = System.IO.File.Create(Path.Combine(uploads, storedName));
         await upload.CopyToAsync(stream);
         return storedName;
+    }
+
+    private static async Task<string?> GetClipboardImageExtensionAsync(IFormFile image)
+    {
+        var signature = new byte[12];
+        await using var stream = image.OpenReadStream();
+        var bytesRead = await stream.ReadAsync(signature);
+
+        if (bytesRead >= 8 && signature.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }))
+        {
+            return "png";
+        }
+
+        if (bytesRead >= 3 && signature[0] == 0xFF && signature[1] == 0xD8 && signature[2] == 0xFF)
+        {
+            return "jpg";
+        }
+
+        if (bytesRead >= 6 && (signature.AsSpan(0, 6).SequenceEqual("GIF87a"u8) || signature.AsSpan(0, 6).SequenceEqual("GIF89a"u8)))
+        {
+            return "gif";
+        }
+
+        if (bytesRead >= 12 &&
+            signature.AsSpan(0, 4).SequenceEqual("RIFF"u8) &&
+            signature.AsSpan(8, 4).SequenceEqual("WEBP"u8))
+        {
+            return "webp";
+        }
+
+        return null;
     }
 
     private static BbsPost MapPost(SqlDataReader reader) => new()

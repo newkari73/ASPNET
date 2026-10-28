@@ -14,8 +14,30 @@
     <label asp-for="Title"></label>
     <input asp-for="Title" class="form-control" autofocus />
     <span asp-validation-for="Title" class="text-danger"></span>
-    <label asp-for="Contents"></label>
-    <textarea asp-for="Contents" class="form-control content-input" rows="12"></textarea>
+    <label asp-for="Contents" for="Contents-editor"></label>
+    <div class="rich-text-editor" data-rich-text-editor data-image-upload-url="@Url.Action("UploadEditorImage", "Bbs")">
+        <div class="rich-text-toolbar" role="toolbar" aria-label="내용 편집 도구">
+            <button type="button" data-editor-command="bold" aria-label="굵게" title="굵게"><strong>B</strong></button>
+            <button type="button" data-editor-command="italic" aria-label="기울임" title="기울임"><em>I</em></button>
+            <button type="button" data-editor-command="underline" aria-label="밑줄" title="밑줄"><u>U</u></button>
+            <span class="rich-text-toolbar-divider" aria-hidden="true"></span>
+            <label class="rich-text-color-label" for="Contents-text-color">글자색</label>
+            <input id="Contents-text-color" type="color" value="#172126" data-editor-color aria-label="글자색 선택" title="글자색 선택" />
+            <button type="button" data-editor-command="insertUnorderedList" aria-label="글머리 기호" title="글머리 기호">• 목록</button>
+            <button type="button" data-editor-command="insertOrderedList" aria-label="번호 목록" title="번호 목록">1. 목록</button>
+            <select data-editor-block aria-label="문단 스타일">
+                <option value="p">본문</option>
+                <option value="h2">제목</option>
+                <option value="h3">소제목</option>
+                <option value="blockquote">인용</option>
+            </select>
+            <button type="button" data-editor-link aria-label="링크 삽입" title="링크 삽입">링크</button>
+            <button type="button" data-editor-command="removeFormat" aria-label="서식 지우기" title="서식 지우기">서식 지우기</button>
+        </div>
+        <div id="Contents-editor" class="rich-text-surface" contenteditable="true" role="textbox" aria-multiline="true" aria-label="내용" hidden></div>
+        <textarea asp-for="Contents" class="form-control content-input" data-editor-source rows="12"></textarea>
+    </div>
+    <p class="rich-text-editor-status" data-editor-status role="status" aria-live="polite">이미지를 복사해 붙여넣을 수 있습니다.</p>
     <span asp-validation-for="Contents" class="text-danger"></span>
     <label for="upload">이미지 첨부</label>
     <input id="upload" name="upload" type="file" class="form-control" accept="image/*" data-image-preview="upload-preview" />
@@ -25,4 +47,7 @@
         <button class="btn btn-primary" type="submit">등록하기</button>
     </div>
 </form>
-@section Scripts { <partial name="_ValidationScriptsPartial" /> }
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/rich-text-editor.js" asp-append-version="true"></script>
+}

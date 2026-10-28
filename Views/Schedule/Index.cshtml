@@ -70,30 +70,12 @@
                 var daySchedules = Model.MonthSchedules
                     .Where(item => item.StartDateTime.Date <= date && item.EndDateTime.Date >= date)
                     .ToList();
-                <a class="calendar-day @(isSelected ? "is-selected" : "") @(isPast ? "is-past" : "") @(hasSchedule ? "has-schedule" : "") @(isHoliday ? "is-holiday" : "")" title="@(isHoliday ? holidayName : null)" asp-route-month="@Model.Month.ToString("yyyy-MM-dd")" asp-route-selectedDate="@date.ToString("yyyy-MM-dd")">
+                <a class="calendar-day @(isSelected ? "is-selected" : "") @(isPast ? "is-past" : "") @(hasSchedule ? "has-schedule" : "") @(isHoliday ? "is-holiday" : "")" title="@(isHoliday ? holidayName : null)" data-schedule-select-date="@date.ToString("yyyy-MM-dd")" asp-route-month="@Model.Month.ToString("yyyy-MM-dd")" asp-route-selectedDate="@date.ToString("yyyy-MM-dd")">
                     <span>@day</span>
                     @if (hasSchedule) { <i aria-label="일정 있음"></i> }
                     @foreach (var item in daySchedules)
                     {
                         <span class="schedule-range-label">@item.Title</span>
-                    }
-                    @if (daySchedules.Count > 0)
-                    {
-                        <span class="schedule-hover-card">
-                            @foreach (var item in daySchedules)
-                            {
-                                <span class="schedule-hover-item">
-                                    <strong>@item.Title</strong>
-                                    <button type="button" class="schedule-hover-delete" data-schedule-delete-id="@item.ID" data-schedule-delete-date="@date.ToString("yyyy-MM-dd")">삭제</button>
-                                </span>
-                                @if (!string.IsNullOrWhiteSpace(item.Contents)) { <small>@item.Contents</small> }
-                            }
-                            @if (!isPast) { <button type="button" class="schedule-hover-add" data-schedule-open-date="@date.ToString("yyyy-MM-dd")">+ 일정 등록</button> }
-                        </span>
-                    }
-                    else if (!isPast)
-                    {
-                        <button type="button" class="schedule-day-add" data-schedule-open-date="@date.ToString("yyyy-MM-dd")" aria-label="@date.ToString("yyyy년 M월 d일") 일정 등록">+</button>
                     }
                 </a>
             }
@@ -116,16 +98,17 @@
                             <span class="schedule-time">@item.StartDateTime.ToString("yyyy-MM-dd HH:mm") - @item.EndDateTime.ToString("yyyy-MM-dd HH:mm")</span>
                             <h3>@item.Title</h3>
                             @if (!string.IsNullOrWhiteSpace(item.Contents)) { <p>@item.Contents</p> }
+                            <template data-schedule-edit-contents>@item.Contents</template>
                         </div>
                         <div class="schedule-item-actions">
-                            <button type="button" class="schedule-edit" data-schedule-edit-id="@item.ID" data-schedule-edit-start-date="@item.StartDateTime.ToString("yyyy-MM-dd")" data-schedule-edit-start-time="@item.StartDateTime.ToString("HH:mm")" data-schedule-edit-end-date="@item.EndDateTime.ToString("yyyy-MM-dd")" data-schedule-edit-end-time="@item.EndDateTime.ToString("HH:mm")" data-schedule-edit-title="@item.Title" data-schedule-edit-contents="@item.Contents">수정</button>
+                            <button type="button" class="schedule-edit" data-schedule-edit-id="@item.ID" data-schedule-edit-start-date="@item.StartDateTime.ToString("yyyy-MM-dd")" data-schedule-edit-start-time="@item.StartDateTime.ToString("HH:mm")" data-schedule-edit-end-date="@item.EndDateTime.ToString("yyyy-MM-dd")" data-schedule-edit-end-time="@item.EndDateTime.ToString("HH:mm")" data-schedule-edit-title="@item.Title">수정</button>
                             <button type="button" class="schedule-delete" data-schedule-delete-id="@item.ID" data-schedule-delete-date="@Model.SelectedDate.ToString("yyyy-MM-dd")">삭제</button>
                         </div>
                     </article>
                 }
             </div>
         }
-        <form asp-action="Create" method="post" class="schedule-form" data-schedule-form data-update-url="@Url.Action("Update", "Schedule")" data-mode="create">
+        <form asp-action="Create" method="post" class="schedule-form" data-schedule-form data-update-url-template="@Url.Action("Update", "Schedule", new { id = "__id__" })" data-mode="create">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" value="0" />
             <h3 data-schedule-form-title>일정 등록</h3>

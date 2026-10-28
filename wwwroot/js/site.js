@@ -127,37 +127,24 @@
 		window.history.replaceState({}, '', `${url.pathname}${url.search}`);
 	};
 
-	const openCreateForm = (form, date) => {
-		const error = form.querySelector('[data-schedule-error]');
-		const submitButton = form.querySelector('button[type="submit"]');
-		error.textContent = '';
-		form.dataset.mode = 'create';
-		form.querySelector('[name="id"]').value = '0';
-		form.querySelector('[name="StartDate"]').value = date;
-		form.querySelector('[name="EndDate"]').value = date;
-		form.querySelector('[name="Title"]').value = '';
-		form.querySelector('[name="Contents"]').value = '';
-		form.querySelector('[data-schedule-form-title]').textContent = '일정 등록';
-		submitButton.textContent = '등록하기';
-		submitButton.disabled = date < new Date().toISOString().slice(0, 10);
-		form.querySelector('[data-schedule-past-notice]')?.toggleAttribute('hidden', !submitButton.disabled);
-		form.querySelector('[name="Title"]').focus();
-	};
-
 	document.addEventListener('click', async (event) => {
+		const calendarDate = event.target.closest('[data-schedule-select-date]');
+		if (calendarDate) {
+			event.preventDefault();
+			try {
+				await refreshScheduleLayout(calendarDate.dataset.scheduleSelectDate);
+			} catch (requestError) {
+				alert(requestError.message);
+			}
+			return;
+		}
+
 		const button = event.target.closest('button');
 		if (!button) {
 			return;
 		}
 
 		const form = document.querySelector('[data-schedule-form]');
-		if (button.matches('[data-schedule-open-date]') && form) {
-			event.preventDefault();
-			event.stopPropagation();
-			openCreateForm(form, button.dataset.scheduleOpenDate);
-			return;
-		}
-
 		if (button.matches('[data-schedule-edit-id]') && form) {
 			const error = form.querySelector('[data-schedule-error]');
 			const submitButton = form.querySelector('button[type="submit"]');
@@ -169,7 +156,7 @@
 			form.querySelector('[name="EndDate"]').value = button.dataset.scheduleEditEndDate;
 			form.querySelector('[name="EndTime"]').value = button.dataset.scheduleEditEndTime;
 			form.querySelector('[name="Title"]').value = button.dataset.scheduleEditTitle;
-			form.querySelector('[name="Contents"]').value = button.dataset.scheduleEditContents;
+			form.querySelector('[name="Contents"]').value = button.closest('.schedule-item').querySelector('[data-schedule-edit-contents]').content.textContent;
 			form.querySelector('[data-schedule-form-title]').textContent = '일정 수정';
 			submitButton.textContent = '수정하기';
 			submitButton.disabled = false;
@@ -223,7 +210,9 @@
 		submitButton.disabled = true;
 
 		try {
-			const action = form.dataset.mode === 'edit' ? form.dataset.updateUrl : form.action;
+			const action = form.dataset.mode === 'edit'
+				? form.dataset.updateUrlTemplate.replace('__id__', encodeURIComponent(form.querySelector('[name="id"]').value))
+				: form.action;
 			const response = await fetch(action, {
 				method: 'POST',
 				body: new FormData(form),

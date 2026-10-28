@@ -16,6 +16,7 @@ builder.Services.AddSession(options =>
 
 builder.Services.AddSingleton<AspNetBbs.Services.ISystemMetricsService, AspNetBbs.Services.SystemMetricsService>();
 builder.Services.AddScoped<AspNetBbs.Services.IPermissionService, AspNetBbs.Services.PermissionService>();
+builder.Services.AddScoped<AspNetBbs.Services.PostContentSanitizer>();
 
 var authBuilder = builder.Services.AddAuthentication(options =>
 {

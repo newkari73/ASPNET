@@ -10,8 +10,6 @@
         <time datetime="@Model.Post.RegDate.ToString("s")">No. @Model.Post.ID · @Model.Post.UserName · @Model.Post.RegDate.ToString("yyyy.MM.dd HH:mm")</time>
     </div>
 
-    <div class="post-content">@Model.Post.Contents</div>
-
     @if (Model.Post.HasAttachment)
     {
         <div class="photo-detail-grid">
@@ -23,6 +21,8 @@
             }
         </div>
     }
+
+    <div class="post-content">@Model.Post.Contents</div>
 
     <div class="post-actions">
         <a class="btn btn-outline-secondary" asp-action="Index">목록</a>

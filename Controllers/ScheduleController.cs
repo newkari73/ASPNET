@@ -7,7 +7,10 @@ using System.Data;
 
 namespace AspNetBbs.Controllers;
 
-public class ScheduleController(IConfiguration configuration, IPermissionService permissionService) : Controller
+public class ScheduleController(
+    IConfiguration configuration,
+    IPermissionService permissionService,
+    ILogger<ScheduleController> logger) : Controller
 {
     private readonly string connectionString = configuration.GetConnectionString("DefaultConnection")
         ?? throw new InvalidOperationException("DefaultConnection이 설정되지 않았습니다.");
@@ -84,7 +87,7 @@ public class ScheduleController(IConfiguration configuration, IPermissionService
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Update(int id, ScheduleFormModel model)
+    public async Task<IActionResult> Update(int id, [FromForm] ScheduleFormModel model)
     {
         if (!await permissionService.HasPermissionAsync(CurrentUserId, "SCHEDULE", PermissionType.Update))
         {
@@ -110,8 +113,9 @@ public class ScheduleController(IConfiguration configuration, IPermissionService
             await command.ExecuteNonQueryAsync();
             return Json(new { success = true, selectedDate = model.StartDateTime.ToString("yyyy-MM-dd") });
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            logger.LogError(exception, "Failed to update schedule {ScheduleId} for user {UserId}.", id, CurrentUserId);
             return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = "일정 수정 중 오류가 발생했습니다." });
         }
     }
